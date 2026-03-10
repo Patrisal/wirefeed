@@ -200,63 +200,26 @@ app.get('/api/feeds-config', (req, res) => {
 
 // ===== SERVE FRONTEND =====
 // ===== MARKET DATA TICKER =====
-const TICKER_SYMBOLS = [
-  // US Indices
-  { symbol: '^GSPC', name: 'S&P 500', type: 'index' },
-  { symbol: '^IXIC', name: 'NASDAQ', type: 'index' },
-  { symbol: '^DJI', name: 'DOW', type: 'index' },
-  // EU Indices
-  { symbol: '^FCHI', name: 'CAC 40', type: 'index' },
-  { symbol: '^GDAXI', name: 'DAX', type: 'index' },
-  { symbol: '^FTSE', name: 'FTSE', type: 'index' },
-  { symbol: '^STOXX50E', name: 'STOXX50', type: 'index' },
-  // Asia
-  { symbol: '^N225', name: 'NIKKEI', type: 'index' },
-  { symbol: '^HSI', name: 'HANG SENG', type: 'index' },
-  // Commodities
-  { symbol: 'GC=F', name: 'GOLD', type: 'commodity' },
-  { symbol: 'SI=F', name: 'SILVER', type: 'commodity' },
-  { symbol: 'CL=F', name: 'WTI OIL', type: 'commodity' },
-  { symbol: 'BZ=F', name: 'BRENT', type: 'commodity' },
-  { symbol: 'HG=F', name: 'COPPER', type: 'commodity' },
-  { symbol: 'NG=F', name: 'NAT GAS', type: 'commodity' },
-  // Crypto
-  { symbol: 'BTC-USD', name: 'BTC', type: 'crypto' },
-  { symbol: 'ETH-USD', name: 'ETH', type: 'crypto' },
-  // FX
-  { symbol: 'EURUSD=X', name: 'EUR/USD', type: 'fx' },
-  { symbol: 'EURGBP=X', name: 'EUR/GBP', type: 'fx' },
-  { symbol: 'EURCHF=X', name: 'EUR/CHF', type: 'fx' },
-  { symbol: 'USDJPY=X', name: 'USD/JPY', type: 'fx' },
-  { symbol: 'GBPUSD=X', name: 'GBP/USD', type: 'fx' },
-  { symbol: 'DX-Y.NYB', name: 'DXY', type: 'fx' },
-  // Rates
-  { symbol: '^TNX', name: 'US 10Y', type: 'rate' },
-  { symbol: '^TYX', name: 'US 30Y', type: 'rate' },
-  { symbol: '^FVX', name: 'US 5Y', type: 'rate' },
-];
-
-let tickerCache = [];
-let tickerLastFetch = 0;
-const TICKER_CACHE_TTL = 30 * 1000; // 30 seconds
-
 async function fetchMarketData() {
   try {
-    const symbols = TICKER_SYMBOLS.map(t => t.symbol).join(',');
-    const url = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=' + encodeURIComponent(symbols) + '&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,marketState';
-    const resp = await fetch(url, {
+    var symbols = TICKER_SYMBOLS.map(function(t){return t.symbol}).join(',');
+    var url = 'https://query2.finance.yahoo.com/v6/finance/quote?symbols=' + encodeURIComponent(symbols);
+    var resp = await fetch(url, {
       timeout: 10000,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
       },
     });
-    if (!resp.ok) return [];
-    const data = await resp.json();
-    if (!data.quoteResponse || !data.quoteResponse.result) return [];
-
+    if (!resp.ok) {
+      // Fallback: try individual fetches from Yahoo v8
+      return await fetchMarketDataFallback();
+    }
+    var data = await resp.json();
+    if (!data.quoteResponse || !data.quoteResponse.result) return await fetchMarketDataFallback();
     return data.quoteResponse.result.map(function(q) {
-      var meta = TICKER_SYMBOLS.find(function(t) { return t.symbol === q.symbol; });
+      var meta = TICKER_SYMBOLS.find(function(t){return t.symbol === q.symbol});
       return {
         symbol: q.symbol,
         name: meta ? meta.name : q.shortName || q.symbol,
@@ -268,27 +231,46 @@ async function fetchMarketData() {
       };
     });
   } catch (e) {
-    console.error('Market data fetch error:', e.message);
-    return [];
+    console.error('Yahoo v6 failed:', e.message);
+    return await fetchMarketDataFallback();
   }
 }
 
-app.get('/api/ticker', async (req, res) => {
-  try {
-    var now = Date.now();
-    if (tickerCache.length > 0 && (now - tickerLastFetch) < TICKER_CACHE_TTL) {
-      return res.json({ data: tickerCache, cached: true });
-    }
-    var data = await fetchMarketData();
-    if (data.length > 0) {
-      tickerCache = data;
-      tickerLastFetch = now;
-    }
-    res.json({ data: tickerCache.length > 0 ? tickerCache : data, cached: false });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
+async function fetchMarketDataFallback() {
+  var results = [];
+  // Fetch one by one from Yahoo v8 chart endpoint
+  var promises = TICKER_SYMBOLS.map(async function(t) {
+    try {
+      var url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(t.symbol) + '?interval=1d&range=2d';
+      var resp = await fetch(url, {
+        timeout: 8000,
+        headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
+      });
+      if (!resp.ok) return null;
+      var data = await resp.json();
+      var meta = data.chart && data.chart.result && data.chart.result[0] && data.chart.result[0].meta;
+      if (!meta) return null;
+      var price = meta.regularMarketPrice || 0;
+      var prevClose = meta.chartPreviousClose || meta.previousClose || price;
+      var change = price - prevClose;
+      var changePct = prevClose ? (change / prevClose) * 100 : 0;
+      return {
+        symbol: t.symbol,
+        name: t.name,
+        type: t.type,
+        price: price,
+        change: change,
+        changePct: changePct,
+        state: meta.marketState || 'CLOSED',
+      };
+    } catch (e) { return null; }
+  });
+  var settled = await Promise.allSettled(promises);
+  settled.forEach(function(r) {
+    if (r.status === 'fulfilled' && r.value) results.push(r.value);
+  });
+  return results;
+}
 
 app.use(express.static(path.join(__dirname, 'public')));
 
