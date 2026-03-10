@@ -45,8 +45,6 @@ body{
 .cnt{font-size:9px;color:var(--amber);background:rgba(255,149,0,.1);padding:1px 5px;border-radius:2px;min-width:20px;text-align:center}
 .rbtn{background:none;border:1px solid var(--border);color:var(--dim);font-family:inherit;font-size:10px;padding:1px 6px;border-radius:2px;cursor:pointer}
 .rbtn:active{background:var(--border);color:var(--text)}
-
-/* TICKER */
 .ticker{
   position:fixed;top:36px;left:0;right:0;z-index:99;
   background:var(--bg2);border-bottom:1px solid var(--border);
@@ -56,27 +54,21 @@ body{
   display:flex;gap:0;white-space:nowrap;
   animation:tickscroll 120s linear infinite;
 }
-.ticker-track:hover{animation-play-state:paused}
 @keyframes tickscroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 .tk{
   display:inline-flex;align-items:center;gap:4px;
   padding:0 12px;font-size:9px;
-  border-right:1px solid var(--border);
-  height:24px;
+  border-right:1px solid var(--border);height:24px;
 }
-.tk .tn{color:var(--text2);font-weight:600;letter-spacing:.3px}
+.tk .tn{font-weight:600;letter-spacing:.3px}
 .tk .tp{color:var(--text);font-weight:500}
 .tk .tc{font-weight:600;font-size:8px}
 .tk .tc.up{color:var(--green)}
 .tk .tc.dn{color:var(--red)}
-.tk .pct{font-size:8px;font-weight:400;opacity:.7}
 .tk.type-index .tn{color:var(--amber)}
 .tk.type-commodity .tn{color:var(--purple)}
 .tk.type-crypto .tn{color:var(--orange)}
 .tk.type-fx .tn{color:var(--cyan)}
-.tk.type-rate .tn{color:var(--green)}
-
-/* FILTERS */
 .fbar{
   position:fixed;top:60px;left:0;right:0;z-index:98;
   background:var(--bg);border-bottom:1px solid var(--border);
@@ -96,16 +88,12 @@ body{
 .fb[data-c="rates"].on{background:var(--green);border-color:var(--green)}
 .fb[data-c="commodities"].on{background:var(--purple);border-color:var(--purple)}
 .fb[data-c="tech"].on{background:var(--cyan);border-color:var(--cyan);color:#000}
-
-/* SUBHEADER */
 .subhdr{
   position:fixed;top:86px;left:0;right:0;z-index:97;
   background:var(--bg2);border-bottom:1px solid var(--border);
   padding:3px 10px;display:flex;justify-content:space-between;
   font-size:8px;color:var(--dim);letter-spacing:.8px;text-transform:uppercase;
 }
-
-/* FEED */
 .feed{
   position:fixed;top:104px;left:0;right:0;bottom:0;
   overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg);
@@ -113,7 +101,6 @@ body{
 .feed::-webkit-scrollbar{width:2px}
 .feed::-webkit-scrollbar-track{background:var(--bg)}
 .feed::-webkit-scrollbar-thumb{background:var(--border2);border-radius:1px}
-
 .row{
   display:flex;align-items:flex-start;padding:7px 10px;
   border-bottom:1px solid var(--border);cursor:pointer;gap:8px;
@@ -148,7 +135,7 @@ body{
 .tg-tech{color:var(--cyan);background:var(--cyanbg)}
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;color:var(--dim);font-size:11px;text-align:center;gap:12px}
 .empty .icon{font-size:32px;opacity:.3}
-.empty .sub{font-size:9px;color:var(--dim);letter-spacing:.5px}
+.empty .sub{font-size:9px;letter-spacing:.5px}
 .sep{padding:4px 10px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:8px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;display:flex;justify-content:space-between}
 .detail{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:200;overflow-y:auto;transform:translateX(100%);transition:transform .2s ease;-webkit-overflow-scrolling:touch}
 .detail.open{transform:translateX(0)}
@@ -167,7 +154,7 @@ body{
 <div class="topbar-l"><div class="pulse" id="dot"></div><div class="brand">WIREFEED<i>TERMINAL</i></div></div>
 <div class="topbar-r"><span class="clk" id="clk">--:--:--</span><span class="cnt" id="cnt">0</span><button class="rbtn" id="rb" onclick="go()">↻</button></div>
 </div>
-<div class="ticker"><div class="ticker-track" id="ticker"><span class="tk"><span class="tn">LOADING MARKET DATA...</span></span></div></div>
+<div class="ticker"><div class="ticker-track" id="ticker"></div></div>
 <div class="fbar">
 <button class="fb on" data-c="all" onclick="fil('all',this)">ALL</button>
 <button class="fb" data-c="macro" onclick="fil('macro',this)">MACRO</button>
@@ -178,7 +165,7 @@ body{
 <button class="fb" data-c="tech" onclick="fil('tech',this)">TECH</button>
 </div>
 <div class="subhdr"><span>TIME</span><span>SRC</span><span style="flex:1;text-align:left;padding-left:8px">HEADLINE</span></div>
-<div class="feed" id="feed"><div class="empty"><div class="icon">⟐</div><div>INITIALIZING FEED</div><div class="sub">CONNECTING TO 18 RSS SOURCES</div></div></div>
+<div class="feed" id="feed"><div class="empty"><div class="icon">⟐</div><div>INITIALIZING FEED</div><div class="sub">CONNECTING TO RSS SOURCES</div></div></div>
 <div class="detail" id="det"><div class="dhdr"><button class="dbk" onclick="document.getElementById('det').classList.remove('open')">‹ BACK</button><span style="font-size:9px;color:var(--dim);letter-spacing:1px">ARTICLE DETAIL</span></div><div class="dbdy" id="dbdy"></div></div>
 
 <script>
@@ -208,22 +195,12 @@ function esc(s){var e=document.createElement('span');e.textContent=s;return e.in
 function srcCls(c){return(c||'source-dj').replace('source-','sr-')}
 
 // ===== MARKET TICKER =====
-function fmtPrice(p,type){
-  if(!p&&p!==0)return'--';
-  if(type==='fx')return p.toFixed(4);
-  if(type==='rate')return p.toFixed(3)+'%';
-  if(type==='crypto')return p>=1000?p.toFixed(0):p.toFixed(2);
-  if(p>=10000)return p.toFixed(0);
-  if(p>=100)return p.toFixed(1);
-  return p.toFixed(2);
-}
-
 function loadTicker(){
   var KEY='656fe044eb3d4697b39f1e7874f707ad';
-  var syms='SPX,IXIC,DJI,FCHI,GDAXI,UKX,NI225,HSI,XAU/USD,XAG/USD,CL,BRN,HG,NG,BTC/USD,ETH/USD,EUR/USD,EUR/GBP,EUR/CHF,USD/JPY,GBP/USD,DXY';
-  var names={'SPX':'S&P500','IXIC':'NASDAQ','DJI':'DOW','FCHI':'CAC40','GDAXI':'DAX','UKX':'FTSE','NI225':'NIKKEI','HSI':'HANG SENG','XAU/USD':'GOLD','XAG/USD':'SILVER','CL':'WTI','BRN':'BRENT','HG':'COPPER','NG':'NATGAS','BTC/USD':'BTC','ETH/USD':'ETH','EUR/USD':'EUR/USD','EUR/GBP':'EUR/GBP','EUR/CHF':'EUR/CHF','USD/JPY':'USD/JPY','GBP/USD':'GBP/USD','DXY':'DXY'};
-  var types={'SPX':'index','IXIC':'index','DJI':'index','FCHI':'index','GDAXI':'index','UKX':'index','NI225':'index','HSI':'index','XAU/USD':'commodity','XAG/USD':'commodity','CL':'commodity','BRN':'commodity','HG':'commodity','NG':'commodity','BTC/USD':'crypto','ETH/USD':'crypto','EUR/USD':'fx','EUR/GBP':'fx','EUR/CHF':'fx','USD/JPY':'fx','GBP/USD':'fx','DXY':'fx'};
-  fetch('https://api.twelvedata.com/quote?symbol='+syms+'&apikey='+KEY)
+  var syms='XAU/USD,XAG/USD,BTC/USD,ETH/USD,EUR/USD,EUR/GBP,EUR/CHF,USD/JPY,GBP/USD,AUD/USD,USD/CAD,EUR/JPY,AAPL,MSFT,NVDA,AMZN,GOOGL,META,TSLA,JPM';
+  var names={'XAU/USD':'GOLD','XAG/USD':'SILVER','BTC/USD':'BTC','ETH/USD':'ETH','EUR/USD':'EUR/USD','EUR/GBP':'EUR/GBP','EUR/CHF':'EUR/CHF','USD/JPY':'USD/JPY','GBP/USD':'GBP/USD','AUD/USD':'AUD/USD','USD/CAD':'USD/CAD','EUR/JPY':'EUR/JPY','AAPL':'AAPL','MSFT':'MSFT','NVDA':'NVDA','AMZN':'AMZN','GOOGL':'GOOG','META':'META','TSLA':'TSLA','JPM':'JPM'};
+  var types={'XAU/USD':'commodity','XAG/USD':'commodity','BTC/USD':'crypto','ETH/USD':'crypto','EUR/USD':'fx','EUR/GBP':'fx','EUR/CHF':'fx','USD/JPY':'fx','GBP/USD':'fx','AUD/USD':'fx','USD/CAD':'fx','EUR/JPY':'fx','AAPL':'index','MSFT':'index','NVDA':'index','AMZN':'index','GOOGL':'index','META':'index','TSLA':'index','JPM':'index'};
+  fetch('https://api.twelvedata.com/quote?symbol='+encodeURIComponent(syms)+'&apikey='+KEY)
     .then(function(r){return r.json()})
     .then(function(data){
       var h='';
@@ -231,7 +208,7 @@ function loadTicker(){
       for(var i=0;i<keys.length;i++){
         var sym=keys[i];
         var q=data[sym];
-        if(!q||!q.close)continue;
+        if(!q||q.code||!q.close)continue;
         var p=parseFloat(q.close);
         var pc=parseFloat(q.previous_close)||p;
         var ch=p-pc;
@@ -254,6 +231,7 @@ function loadTicker(){
 }
 loadTicker();
 setInterval(loadTicker,60000);
+
 // ===== NEWS FEED =====
 function draw(){
   var f=document.getElementById('feed');
@@ -335,14 +313,4 @@ function go(){
 }
 
 var ty=0;var feedEl=document.getElementById('feed');
-feedEl.addEventListener('touchstart',function(e){ty=e.touches[0].clientY});
-feedEl.addEventListener('touchend',function(e){if(feedEl.scrollTop===0&&e.changedTouches[0].clientY-ty>80)go()});
-var dx=0;var detEl=document.getElementById('det');
-detEl.addEventListener('touchstart',function(e){dx=e.touches[0].clientX});
-detEl.addEventListener('touchend',function(e){if(e.changedTouches[0].clientX-dx>80)detEl.classList.remove('open')});
-
-go();
-setInterval(go,60000);
-</script>
-</body>
-</html>
+feedEl.addEventListener('touchstart',function(e){ty=e.touches[0
