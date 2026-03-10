@@ -123,12 +123,15 @@ function esc(s){var e=document.createElement('span');e.textContent=s;return e.in
 function srcCls(c){return(c||'source-dj').replace('source-','sr-')}
 
 function loadTicker(){
-var syms='XAU/USD,XAG/USD,BTC/USD,ETH/USD,EUR/USD,EUR/GBP,EUR/CHF,USD/JPY,GBP/USD,AUD/USD,USD/CAD,EUR/JPY,AAPL,MSFT,NVDA,AMZN,GOOGL,META,TSLA,JPM';
+var batch1='XAU/USD,XAG/USD,BTC/USD,ETH/USD,EUR/USD,EUR/GBP,EUR/CHF,USD/JPY,GBP/USD,AUD/USD';
+var batch2='USD/CAD,EUR/JPY,AAPL,MSFT,NVDA,AMZN,GOOGL,META,TSLA,JPM';
 var names={'XAU/USD':'GOLD','XAG/USD':'SILVER','BTC/USD':'BTC','ETH/USD':'ETH','EUR/USD':'EUR/USD','EUR/GBP':'EUR/GBP','EUR/CHF':'EUR/CHF','USD/JPY':'USD/JPY','GBP/USD':'GBP/USD','AUD/USD':'AUD/USD','USD/CAD':'USD/CAD','EUR/JPY':'EUR/JPY','AAPL':'AAPL','MSFT':'MSFT','NVDA':'NVDA','AMZN':'AMZN','GOOGL':'GOOG','META':'META','TSLA':'TSLA','JPM':'JPM'};
 var types={'XAU/USD':'commodity','XAG/USD':'commodity','BTC/USD':'crypto','ETH/USD':'crypto','EUR/USD':'fx','EUR/GBP':'fx','EUR/CHF':'fx','USD/JPY':'fx','GBP/USD':'fx','AUD/USD':'fx','USD/CAD':'fx','EUR/JPY':'fx','AAPL':'index','MSFT':'index','NVDA':'index','AMZN':'index','GOOGL':'index','META':'index','TSLA':'index','JPM':'index'};
-fetch('https://api.twelvedata.com/quote?symbol='+encodeURIComponent(syms)+'&apikey='+TKEY)
-.then(function(r){return r.json()})
-.then(function(data){
+var url1='https://api.twelvedata.com/quote?symbol='+encodeURIComponent(batch1)+'&apikey='+TKEY;
+var url2='https://api.twelvedata.com/quote?symbol='+encodeURIComponent(batch2)+'&apikey='+TKEY;
+Promise.all([fetch(url1).then(function(r){return r.json()}),fetch(url2).then(function(r){return r.json()})])
+.then(function(results){
+var data=Object.assign({},results[0],results[1]);
 var h='';
 var keys=Object.keys(data);
 for(var i=0;i<keys.length;i++){
