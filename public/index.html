@@ -219,31 +219,43 @@ function fmtPrice(p,type){
 }
 
 function loadTicker(){
-  fetch(BASE+'/api/ticker')
-    .then(function(r){return r.json()})
-    .then(function(data){
-      if(!data.data||data.data.length===0)return;
+  var syms='AAPL,MSFT,GOOGL,AMZN,BTC-USD,ETH-USD,GC=F,SI=F,CL=F,EURUSD=X,GBPUSD=X,USDJPY=X,^GSPC,^IXIC,^DJI,^FCHI,^GDAXI,^FTSE';
+  var names={'AAPL':'AAPL','MSFT':'MSFT','GOOGL':'GOOG','AMZN':'AMZN','BTC-USD':'BTC','ETH-USD':'ETH','GC=F':'GOLD','SI=F':'SILVER','CL=F':'WTI','EURUSD=X':'EUR/USD','GBPUSD=X':'GBP/USD','USDJPY=X':'USD/JPY','^GSPC':'S&P500','^IXIC':'NASDAQ','^DJI':'DOW','^FCHI':'CAC40','^GDAXI':'DAX','^FTSE':'FTSE'};
+  var types={'AAPL':'index','MSFT':'index','GOOGL':'index','AMZN':'index','BTC-USD':'crypto','ETH-USD':'crypto','GC=F':'commodity','SI=F':'commodity','CL=F':'commodity','EURUSD=X':'fx','GBPUSD=X':'fx','USDJPY=X':'fx','^GSPC':'index','^IXIC':'index','^DJI':'index','^FCHI':'index','^GDAXI':'index','^FTSE':'index'};
+  fetch('https://api.allorigins.win/raw?url='+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1d'))
+    .then(function(){
+      var all=syms.split(',');
       var h='';
-      for(var i=0;i<data.data.length;i++){
-        var t=data.data[i];
-        var dir=t.change>=0?'up':'dn';
-        var sign=t.change>=0?'+':'';
-        var arrow=t.change>=0?'▲':'▼';
-        h+='<span class="tk type-'+t.type+'">';
-        h+='<span class="tn">'+esc(t.name)+'</span>';
-        h+='<span class="tp">'+fmtPrice(t.price,t.type)+'</span>';
-        h+='<span class="tc '+dir+'">'+arrow+' '+sign+t.changePct.toFixed(2)+'%</span>';
-        h+='</span>';
-      }
-      // Duplicate for seamless loop
-      document.getElementById('ticker').innerHTML=h+h;
+      var done=0;
+      all.forEach(function(sym){
+        fetch('https://api.allorigins.win/raw?url='+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'?interval=1d&range=2d'))
+          .then(function(r){return r.json()})
+          .then(function(data){
+            var m=data.chart&&data.chart.result&&data.chart.result[0]&&data.chart.result[0].meta;
+            if(m){
+              var p=m.regularMarketPrice||0;
+              var pc=m.chartPreviousClose||m.previousClose||p;
+              var ch=p-pc;
+              var pct=pc?(ch/pc)*100:0;
+              var dir=ch>=0?'up':'dn';
+              var arrow=ch>=0?'▲':'▼';
+              var nm=names[sym]||sym;
+              var tp=types[sym]||'index';
+              var pr=tp==='fx'?p.toFixed(4):tp==='crypto'?p.toFixed(0):p>=1000?p.toFixed(0):p.toFixed(2);
+              h+='<span class="tk type-'+tp+'"><span class="tn">'+nm+'</span><span class="tp">'+pr+'</span><span class="tc '+dir+'">'+arrow+' '+(ch>=0?'+':'')+pct.toFixed(2)+'%</span></span>';
+            }
+          })
+          .catch(function(){})
+          .finally(function(){
+            done++;
+            if(done>=all.length&&h){document.getElementById('ticker').innerHTML=h+h}
+          });
+      });
     })
-    .catch(function(e){console.error('Ticker error:',e)});
+    .catch(function(){});
 }
-
 loadTicker();
 setInterval(loadTicker,30000);
-
 // ===== NEWS FEED =====
 function draw(){
   var f=document.getElementById('feed');
