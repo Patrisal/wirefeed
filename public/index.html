@@ -197,7 +197,39 @@ if(p>=100)return p.toFixed(1);
 return p.toFixed(2);
 }
 
+var tickerBuilt=false;
 function renderTicker(){
+if(!tickerBuilt){buildTicker();return}
+var ordered=SYMBOLS.filter(function(sym){return tickerData[sym.s]});
+for(var i=0;i<ordered.length;i++){
+var sym=ordered[i];
+var d=tickerData[sym.s];
+if(!d)continue;
+var els=document.querySelectorAll('.tp-'+i);
+var arrows=document.querySelectorAll('.ar-'+i);
+var chEls=document.querySelectorAll('.ch-'+i);
+if(els.length===0)continue;
+var pr=fmtPrice(d.price,sym.t);
+var dir=d.change>=0?'up':'dn';
+var sign=d.change>=0?'+':'';
+for(var j=0;j<els.length;j++){
+els[j].textContent=pr;
+els[j].className='tp tp-'+i+(d.tick?' '+d.tick:'');
+}
+for(var j=0;j<chEls.length;j++){
+chEls[j].className='tc ch-'+i+' '+dir;
+chEls[j].innerHTML=(d.change>=0?'&#9650;':'&#9660;')+' '+sign+d.pct.toFixed(2)+'%';
+}
+for(var j=0;j<arrows.length;j++){
+if(d.tick==='tick-up'){arrows[j].innerHTML='<span class="arrow-up">&#9650;</span>';arrows[j].style.display='inline'}
+else if(d.tick==='tick-dn'){arrows[j].innerHTML='<span class="arrow-dn">&#9660;</span>';arrows[j].style.display='inline'}
+else{arrows[j].innerHTML='';arrows[j].style.display='none'}
+}
+}
+setTimeout(function(){for(var k in tickerData){if(tickerData[k].tick)tickerData[k].tick=''}},800);
+}
+
+function buildTicker(){
 var ordered=SYMBOLS.filter(function(sym){return tickerData[sym.s]});
 if(ordered.length===0)return;
 var h='';
@@ -206,22 +238,17 @@ var sym=ordered[i];
 var d=tickerData[sym.s];
 if(!d)continue;
 var dir=d.change>=0?'up':'dn';
-var arrowChar=d.change>=0?'&#9650;':'&#9660;';
-var tickClass=d.tick||'';
-var arrowAnim='';
-if(d.tick==='tick-up')arrowAnim='<span class="arrow-up">&#9650;</span>';
-else if(d.tick==='tick-dn')arrowAnim='<span class="arrow-dn">&#9660;</span>';
+var sign=d.change>=0?'+':'';
 h+='<span class="tk">';
 h+='<span class="tn tn-'+sym.t+'">'+sym.n+'</span> ';
-h+=arrowAnim;
-h+='<span class="tp '+tickClass+'">'+fmtPrice(d.price,sym.t)+'</span> ';
-h+='<span class="tc '+dir+'">'+arrowChar+' '+(d.change>=0?'+':'')+d.pct.toFixed(2)+'%</span>';
+h+='<span class="ar-'+i+'" style="display:none"></span>';
+h+='<span class="tp tp-'+i+'">'+fmtPrice(d.price,sym.t)+'</span> ';
+h+='<span class="tc ch-'+i+' '+dir+'">'+(d.change>=0?'&#9650;':'&#9660;')+' '+sign+d.pct.toFixed(2)+'%</span>';
 h+='</span>';
 }
-if(h)document.getElementById('ticker').innerHTML=h+h;
-setTimeout(function(){for(var k in tickerData){if(tickerData[k].tick)tickerData[k].tick=''}},800);
+document.getElementById('ticker').innerHTML=h+h;
+tickerBuilt=true;
 }
-
 function loadTickerREST(){
 var done=0;
 SYMBOLS.forEach(function(sym,idx){
