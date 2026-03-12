@@ -32,14 +32,8 @@ body{background:#000;color:#e8e8ed;font-family:'JetBrains Mono',monospace;font-s
 .tk .tn{font-weight:600}
 .tk .tp{color:#e8e8ed;font-weight:500;transition:color .3s,text-shadow .3s}
 .tk .tc{font-weight:600;font-size:8px}
-.up{color:#30d158}
-.dn{color:#ff3b30}
-.tn-commodity{color:#bf5af2}
-.tn-crypto{color:#ff9f0a}
-.tn-fx{color:#64d2ff}
-.tn-index{color:#ff9500}
-.tn-rate{color:#30d158}
-/* Price flash on tick */
+.up{color:#30d158}.dn{color:#ff3b30}
+.tn-commodity{color:#bf5af2}.tn-crypto{color:#ff9f0a}.tn-fx{color:#64d2ff}.tn-index{color:#ff9500}.tn-rate{color:#30d158}
 .tp.tick-up{color:#30d158!important;text-shadow:0 0 8px rgba(48,209,88,.5)}
 .tp.tick-dn{color:#ff3b30!important;text-shadow:0 0 8px rgba(255,59,48,.5)}
 .fbar{position:fixed;top:60px;left:0;right:0;z-index:98;background:#000;border-bottom:1px solid #1c1c22;padding:5px 10px;display:flex;gap:4px;overflow-x:auto}
@@ -54,14 +48,11 @@ body{background:#000;color:#e8e8ed;font-family:'JetBrains Mono',monospace;font-s
 .fb[data-c="tech"].on{background:#64d2ff;border-color:#64d2ff;color:#000}
 .subhdr{position:fixed;top:86px;left:0;right:0;z-index:97;background:#0a0a0a;border-bottom:1px solid #1c1c22;padding:3px 10px;font-size:8px;color:#55555f;letter-spacing:.8px;text-transform:uppercase}
 .feed{position:fixed;top:104px;left:0;right:0;bottom:0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#000;scroll-behavior:smooth}
-.feed::-webkit-scrollbar{width:2px}
-.feed::-webkit-scrollbar-track{background:#000}
-.feed::-webkit-scrollbar-thumb{background:#2a2a32}
+.feed::-webkit-scrollbar{width:2px}.feed::-webkit-scrollbar-track{background:#000}.feed::-webkit-scrollbar-thumb{background:#2a2a32}
 .row{display:flex;align-items:flex-start;padding:7px 10px;border-bottom:1px solid #1c1c22;cursor:pointer;gap:8px}
 .row:active{background:#111113}
 .row:nth-child(even){background:#0a0a0a}
 .row.brk{background:rgba(255,59,48,.06)!important;border-left:2px solid #ff3b30;padding-left:8px}
-/* New headline flash */
 .row.fresh{animation:newsflash 1.5s ease}
 @keyframes newsflash{0%{background:rgba(255,149,0,.12);transform:translateX(-4px)}30%{background:rgba(255,149,0,.06);transform:translateX(0)}100%{background:transparent}}
 .row.brk.fresh{animation:breakflash 2s ease}
@@ -101,10 +92,8 @@ body{background:#000;color:#e8e8ed;font-family:'JetBrains Mono',monospace;font-s
 .dbdy .dt{font-size:9px;color:#55555f;margin-bottom:14px}
 .dbdy .dd{font-size:12px;line-height:1.8;color:#8b8b96;margin-bottom:18px}
 .dl{display:inline-block;font-size:9px;color:#ff9500;text-decoration:none;padding:6px 12px;border:1px solid rgba(255,149,0,.3);border-radius:2px;font-weight:600}
-/* Scroll to top button */
 .scroll-top{position:fixed;bottom:20px;right:14px;z-index:150;width:36px;height:36px;border-radius:50%;background:#16161d;border:1px solid #28283a;color:#ff9500;font-size:14px;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.5);font-family:inherit}
 .scroll-top.show{display:flex}
-/* New headlines badge */
 .new-badge{position:fixed;top:106px;left:50%;transform:translateX(-50%);z-index:150;background:#ff9500;color:#000;font-size:8px;font-weight:700;letter-spacing:.8px;padding:4px 12px;border-radius:12px;cursor:pointer;display:none;box-shadow:0 4px 16px rgba(255,149,0,.3);animation:badgepulse 2s infinite}
 .new-badge.show{display:block}
 @keyframes badgepulse{0%,100%{box-shadow:0 4px 16px rgba(255,149,0,.3)}50%{box-shadow:0 4px 24px rgba(255,149,0,.5)}}
@@ -133,47 +122,45 @@ body{background:#000;color:#e8e8ed;font-family:'JetBrains Mono',monospace;font-s
 <script>
 var BASE='https://wirefeed.onrender.com';
 var FKEY='d4d3vnhr01qt1lahlv6gd4d3vnhr01qt1lahlv70';
+var TDKEY='656fe044eb3d4697b39f1e7874f707ad';
 var items=[];
 var prevItemIds={};
 var cf='all';
 var busy=false;
-
-/* === TICKER DATA === */
-/* Each entry stores: price, prevClose, change, pct — prevClose is LOCKED from REST and never touched by WebSocket */
 var tickerData={};
 var tickerBuilt=false;
 var ws=null;
 var wsConnected=false;
 
+/*
+  src:'fh' = Finnhub REST + WebSocket (stocks, crypto)
+  src:'td' = Twelve Data REST (forex, metals) + Finnhub WebSocket via ws: key
+*/
 var symbols=[
-{s:'OANDA:EUR_USD',n:'EUR/USD',t:'fx'},
-{s:'OANDA:EUR_GBP',n:'EUR/GBP',t:'fx'},
-{s:'OANDA:GBP_USD',n:'GBP/USD',t:'fx'},
-{s:'OANDA:USD_JPY',n:'USD/JPY',t:'fx'},
-{s:'OANDA:EUR_CHF',n:'EUR/CHF',t:'fx'},
-{s:'OANDA:AUD_USD',n:'AUD/USD',t:'fx'},
-{s:'OANDA:XAU_USD',n:'GOLD',t:'commodity'},
-{s:'OANDA:XAG_USD',n:'SILVER',t:'commodity'},
-{s:'OANDA:BCO_USD',n:'BRENT',t:'commodity'},
-{s:'BINANCE:BTCUSDT',n:'BTC',t:'crypto'},
-{s:'BINANCE:ETHUSDT',n:'ETH',t:'crypto'},
-{s:'SPY',n:'SPY',t:'index'},
-{s:'QQQ',n:'QQQ',t:'index'},
-{s:'DIA',n:'DIA',t:'index'},
-{s:'EWQ',n:'EWQ',t:'index'},
-{s:'EWG',n:'EWG',t:'index'},
-{s:'EWU',n:'EWU',t:'index'},
-{s:'EWJ',n:'EWJ',t:'index'},
-{s:'EEM',n:'EEM',t:'index'},
-{s:'TLT',n:'TLT',t:'rate'},
-{s:'AMZN',n:'AMZN',t:'index'},
-{s:'NVDA',n:'NVDA',t:'index'},
-{s:'AAPL',n:'AAPL',t:'index'},
-{s:'MSFT',n:'MSFT',t:'index'},
-{s:'META',n:'META',t:'index'},
-{s:'TSLA',n:'TSLA',t:'index'},
-{s:'GOOGL',n:'GOOG',t:'index'},
-{s:'JPM',n:'JPM',t:'index'}
+{s:'EUR/USD',n:'EUR/USD',t:'fx',src:'td',ws:'OANDA:EUR_USD'},
+{s:'EUR/GBP',n:'EUR/GBP',t:'fx',src:'td',ws:'OANDA:EUR_GBP'},
+{s:'GBP/USD',n:'GBP/USD',t:'fx',src:'td',ws:'OANDA:GBP_USD'},
+{s:'USD/JPY',n:'USD/JPY',t:'fx',src:'td',ws:'OANDA:USD_JPY'},
+{s:'EUR/CHF',n:'EUR/CHF',t:'fx',src:'td',ws:'OANDA:EUR_CHF'},
+{s:'AUD/USD',n:'AUD/USD',t:'fx',src:'td',ws:'OANDA:AUD_USD'},
+{s:'XAU/USD',n:'GOLD',t:'commodity',src:'td',ws:'OANDA:XAU_USD'},
+{s:'XAG/USD',n:'SILVER',t:'commodity',src:'td',ws:'OANDA:XAG_USD'},
+{s:'BINANCE:BTCUSDT',n:'BTC',t:'crypto',src:'fh'},
+{s:'BINANCE:ETHUSDT',n:'ETH',t:'crypto',src:'fh'},
+{s:'SPY',n:'S&P500 ETF',t:'index',src:'fh'},
+{s:'QQQ',n:'NDQ100 ETF',t:'index',src:'fh'},
+{s:'DIA',n:'DOW30 ETF',t:'index',src:'fh'},
+{s:'EWQ',n:'CAC40 ETF',t:'index',src:'fh'},
+{s:'EWG',n:'DAX ETF',t:'index',src:'fh'},
+{s:'EWU',n:'FTSE ETF',t:'index',src:'fh'},
+{s:'NVDA',n:'NVDA',t:'index',src:'fh'},
+{s:'AAPL',n:'AAPL',t:'index',src:'fh'},
+{s:'MSFT',n:'MSFT',t:'index',src:'fh'},
+{s:'AMZN',n:'AMZN',t:'index',src:'fh'},
+{s:'META',n:'META',t:'index',src:'fh'},
+{s:'TSLA',n:'TSLA',t:'index',src:'fh'},
+{s:'GOOGL',n:'GOOG',t:'index',src:'fh'},
+{s:'JPM',n:'JPM',t:'index',src:'fh'}
 ];
 
 setInterval(function(){var n=new Date();document.getElementById('clk').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0')},1000);
@@ -211,76 +198,89 @@ document.getElementById('ticker').innerHTML=h+h;
 tickerBuilt=true;
 }
 
-/* === UPDATE TICKER IN-PLACE (no innerHTML rebuild = no stutter) === */
+/* === UPDATE SINGLE PRICE IN-PLACE (no stutter) === */
 function updateTickerPrice(symKey){
 var d=tickerData[symKey];
 if(!d)return;
 var sym=symbols.find(function(s){return s.s===symKey});
 if(!sym)return;
-
 var priceEls=document.querySelectorAll('.tp[data-s="'+symKey+'"]');
 var changeEls=document.querySelectorAll('.tc[data-sc="'+symKey+'"]');
-
 var dir=d.change>=0?'up':'dn';
 var sign=d.change>=0?'+':'';
 var pr=fmtPrice(d.price,sym.t);
-
 for(var i=0;i<priceEls.length;i++){
 priceEls[i].textContent=pr;
-/* Flash green or red */
 priceEls[i].classList.remove('tick-up','tick-dn');
-if(d.tick){
-priceEls[i].classList.add(d.tick);
-}
+if(d.tick)priceEls[i].classList.add(d.tick);
 }
 for(var i=0;i<changeEls.length;i++){
 changeEls[i].className='tc '+dir;
 changeEls[i].setAttribute('data-sc',symKey);
 changeEls[i].innerHTML=(d.change>=0?'&#9650;':'&#9660;')+' '+sign+d.pct.toFixed(2)+'%';
 }
-
-/* Clear flash after 600ms */
 if(d.tick){
+var key=symKey;
 setTimeout(function(){
-var els=document.querySelectorAll('.tp[data-s="'+symKey+'"]');
-for(var i=0;i<els.length;i++){els[i].classList.remove('tick-up','tick-dn')}
+var els=document.querySelectorAll('.tp[data-s="'+key+'"]');
+for(var i=0;i<els.length;i++)els[i].classList.remove('tick-up','tick-dn');
 },600);
 d.tick='';
 }
 }
 
-/* === LOAD INITIAL PRICES VIA REST (this sets the CORRECT prevClose) === */
+/* === LOAD PRICES VIA REST === */
+var loadDone=0;
+var loadTotal=0;
+
+function checkAllLoaded(){
+loadDone++;
+if(loadDone>=loadTotal){
+if(!tickerBuilt)buildTicker();
+else{for(var k in tickerData)updateTickerPrice(k)}
+}
+}
+
 function loadTickerREST(){
-var done=0;
-symbols.forEach(function(sym,idx){
+loadDone=0;
+var fhSyms=symbols.filter(function(s){return s.src==='fh'});
+var tdSyms=symbols.filter(function(s){return s.src==='td'});
+loadTotal=fhSyms.length+1; /* +1 for the single TD batch call */
+
+/* Finnhub: one call per symbol, staggered */
+fhSyms.forEach(function(sym,idx){
 setTimeout(function(){
 fetch('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(sym.s)+'&token='+FKEY)
 .then(function(r){return r.json()})
 .then(function(q){
 if(q&&q.c&&q.c>0){
-var p=q.c;
-var pc=q.pc||p;
-var ch=p-pc;
-var pct=pc?(ch/pc)*100:0;
-tickerData[sym.s]={
-price:p,
-prevClose:pc,  /* LOCKED — WebSocket never changes this */
-change:ch,
-pct:pct,
-tick:''
-};
+tickerData[sym.s]={price:q.c,prevClose:q.pc||q.c,change:q.c-(q.pc||q.c),pct:(q.pc?(q.c-q.pc)/q.pc*100:0),tick:''};
 }
 })
 .catch(function(){})
-.finally(function(){
-done++;
-if(done>=symbols.length){
-if(!tickerBuilt)buildTicker();
-else{for(var k in tickerData)updateTickerPrice(k)}
+.finally(checkAllLoaded);
+},idx*60);
+});
+
+/* Twelve Data: one batch call for all forex + metals */
+var tdList=tdSyms.map(function(s){return s.s}).join(',');
+fetch('https://api.twelvedata.com/quote?symbol='+encodeURIComponent(tdList)+'&apikey='+TDKEY)
+.then(function(r){return r.json()})
+.then(function(data){
+var keys=Object.keys(data);
+for(var i=0;i<keys.length;i++){
+var sym=keys[i];
+var q=data[sym];
+if(!q||q.code||!q.close)continue;
+var p=parseFloat(q.close);
+var pc=parseFloat(q.previous_close)||p;
+var ch=p-pc;
+var pct=pc?(ch/pc)*100:0;
+tickerData[sym]={price:p,prevClose:pc,change:ch,pct:pct,tick:''};
 }
-});
-},idx*50);
-});
+})
+.catch(function(){})
+.finally(checkAllLoaded);
 }
 
 /* === WEBSOCKET LIVE PRICES === */
@@ -292,8 +292,10 @@ ws.onopen=function(){
 wsConnected=true;
 document.getElementById('dot').classList.add('ws');
 var b=document.getElementById('wsbadge');b.textContent='LIVE';b.classList.add('live');
+/* Subscribe to all — use ws: override for forex/metals */
 symbols.forEach(function(sym){
-ws.send(JSON.stringify({type:'subscribe',symbol:sym.s}));
+var wsSymbol=sym.ws||sym.s;
+ws.send(JSON.stringify({type:'subscribe',symbol:wsSymbol}));
 });
 };
 
@@ -301,31 +303,33 @@ ws.onmessage=function(event){
 try{
 var msg=JSON.parse(event.data);
 if(msg.type==='trade'&&msg.data&&msg.data.length>0){
-/* Process only the LAST trade per symbol in this batch */
+/* Get last trade per symbol */
 var latest={};
 for(var i=0;i<msg.data.length;i++){
 latest[msg.data[i].s]=msg.data[i].p;
 }
 for(var symKey in latest){
-var existing=tickerData[symKey];
+/* Map OANDA WS symbol back to our Twelve Data ticker key */
+var tickerKey=symKey;
+var mapped=symbols.find(function(s){return s.ws===symKey});
+if(mapped)tickerKey=mapped.s;
+
+var existing=tickerData[tickerKey];
 if(!existing)continue;
 
 var newPrice=latest[symKey];
 var oldPrice=existing.price;
-
-/* Determine tick direction */
 var tick='';
 if(newPrice>oldPrice)tick='tick-up';
 else if(newPrice<oldPrice)tick='tick-dn';
 
-/* Update price but keep prevClose LOCKED from REST */
+/* Update price, keep prevClose LOCKED from REST */
 existing.price=newPrice;
 existing.change=newPrice-existing.prevClose;
 existing.pct=existing.prevClose?(existing.change/existing.prevClose)*100:0;
 existing.tick=tick;
 
-/* Update DOM in-place (no innerHTML rebuild) */
-if(tickerBuilt)updateTickerPrice(symKey);
+if(tickerBuilt)updateTickerPrice(tickerKey);
 }
 }
 }catch(e){}
@@ -337,7 +341,6 @@ document.getElementById('dot').classList.remove('ws');
 var b=document.getElementById('wsbadge');b.textContent='REST';b.classList.remove('live');
 setTimeout(connectWS,5000);
 };
-
 ws.onerror=function(){ws.close()};
 }
 
@@ -391,19 +394,10 @@ document.getElementById('dbdy').innerHTML='<span class="sr '+srcCls(it.sourceCla
 document.getElementById('det').classList.add('open');
 }
 
-function fil(c,btn){
-cf=c;
-var btns=document.querySelectorAll('.fb');
-for(var i=0;i<btns.length;i++)btns[i].classList.remove('on');
-btn.classList.add('on');
-draw(false);
-}
+function fil(c,btn){cf=c;var btns=document.querySelectorAll('.fb');for(var i=0;i<btns.length;i++)btns[i].classList.remove('on');btn.classList.add('on');draw(false)}
 
 /* === SCROLL TO TOP === */
-function scrollToTop(){
-document.getElementById('feed').scrollTo({top:0,behavior:'smooth'});
-document.getElementById('newbadge').classList.remove('show');
-}
+function scrollToTop(){document.getElementById('feed').scrollTo({top:0,behavior:'smooth'});document.getElementById('newbadge').classList.remove('show')}
 
 var feedEl=document.getElementById('feed');
 feedEl.addEventListener('scroll',function(){
@@ -426,9 +420,7 @@ var oldFirst=items.length>0?(items[0].title||'').substring(0,60):'';
 items=data.items;
 draw(isUpdate);
 var newFirst=items.length>0?(items[0].title||'').substring(0,60):'';
-if(isUpdate&&oldFirst!==newFirst&&feedEl.scrollTop>200){
-document.getElementById('newbadge').classList.add('show');
-}
+if(isUpdate&&oldFirst!==newFirst&&feedEl.scrollTop>200){document.getElementById('newbadge').classList.add('show')}
 }
 })
 .catch(function(e){console.error(e);document.getElementById('feed').innerHTML='<div class="empty">CONNECTION ERROR - TAP REFRESH</div>'})
@@ -444,16 +436,9 @@ detEl.addEventListener('touchstart',function(e){dx=e.touches[0].clientX});
 detEl.addEventListener('touchend',function(e){if(e.changedTouches[0].clientX-dx>80)detEl.classList.remove('open')});
 
 /* === INIT === */
-/* 1. Load correct prices via REST first */
 loadTickerREST();
-
-/* 2. Connect WebSocket after REST has had time to load (3s) */
 setTimeout(connectWS,3000);
-
-/* 3. Fallback: refresh REST prices every 60s if WS drops */
 setInterval(function(){if(!wsConnected)loadTickerREST()},60000);
-
-/* 4. Load news + auto-refresh every 45s */
 go();
 setInterval(go,45000);
 </script>
