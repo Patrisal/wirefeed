@@ -13,12 +13,15 @@ body{background:#000;color:#e8e8ed;font-family:'JetBrains Mono',monospace;font-s
 .topbar-l{display:flex;align-items:center;gap:6px}
 .pulse{width:5px;height:5px;border-radius:50%;background:#30d158;box-shadow:0 0 6px #30d158}
 .pulse.on{background:#ff9500;box-shadow:0 0 6px #ff9500;animation:blink .6s infinite}
+.pulse.ws{background:#00ff88;box-shadow:0 0 10px #00ff88,0 0 20px rgba(0,255,136,.3)}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 .brand{font-size:11px;font-weight:700;color:#ff9500;letter-spacing:1px}
 .brand i{color:#55555f;font-style:normal;font-weight:400;font-size:9px;margin-left:3px}
 .topbar-r{display:flex;align-items:center;gap:6px}
 .clk{font-size:10px;color:#55555f}
 .cnt{font-size:9px;color:#ff9500;background:rgba(255,149,0,.1);padding:1px 5px;border-radius:2px}
+.ws-badge{font-size:7px;padding:1px 4px;border-radius:2px;letter-spacing:.5px;color:#55555f;background:rgba(80,80,106,.08);border:1px solid rgba(80,80,106,.15)}
+.ws-badge.live{color:#00ff88;background:rgba(0,255,136,.08);border-color:rgba(0,255,136,.15)}
 .rbtn{background:none;border:1px solid #1c1c22;color:#55555f;font-family:inherit;font-size:10px;padding:1px 6px;border-radius:2px;cursor:pointer}
 .ticker{position:fixed;top:36px;left:0;right:0;z-index:99;background:#0a0a0a;border-bottom:1px solid #1c1c22;height:24px;overflow-x:auto;overflow-y:hidden;display:flex;align-items:center;-webkit-overflow-scrolling:touch}
 .ticker::-webkit-scrollbar{display:none}
@@ -27,7 +30,7 @@ body{background:#000;color:#e8e8ed;font-family:'JetBrains Mono',monospace;font-s
 @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 .tk{display:inline-flex;align-items:center;gap:4px;padding:0 12px;font-size:9px;border-right:1px solid #1c1c22;height:24px}
 .tk .tn{font-weight:600}
-.tk .tp{color:#e8e8ed;font-weight:500}
+.tk .tp{color:#e8e8ed;font-weight:500;transition:color .3s,text-shadow .3s}
 .tk .tc{font-weight:600;font-size:8px}
 .up{color:#30d158}
 .dn{color:#ff3b30}
@@ -36,6 +39,9 @@ body{background:#000;color:#e8e8ed;font-family:'JetBrains Mono',monospace;font-s
 .tn-fx{color:#64d2ff}
 .tn-index{color:#ff9500}
 .tn-rate{color:#30d158}
+/* Price flash on tick */
+.tp.tick-up{color:#30d158!important;text-shadow:0 0 8px rgba(48,209,88,.5)}
+.tp.tick-dn{color:#ff3b30!important;text-shadow:0 0 8px rgba(255,59,48,.5)}
 .fbar{position:fixed;top:60px;left:0;right:0;z-index:98;background:#000;border-bottom:1px solid #1c1c22;padding:5px 10px;display:flex;gap:4px;overflow-x:auto}
 .fbar::-webkit-scrollbar{display:none}
 .fb{flex-shrink:0;padding:2px 8px;border-radius:2px;border:1px solid #1c1c22;background:transparent;color:#55555f;font-family:inherit;font-size:9px;font-weight:500;cursor:pointer;text-transform:uppercase;letter-spacing:.8px}
@@ -47,7 +53,7 @@ body{background:#000;color:#e8e8ed;font-family:'JetBrains Mono',monospace;font-s
 .fb[data-c="commodities"].on{background:#bf5af2;border-color:#bf5af2}
 .fb[data-c="tech"].on{background:#64d2ff;border-color:#64d2ff;color:#000}
 .subhdr{position:fixed;top:86px;left:0;right:0;z-index:97;background:#0a0a0a;border-bottom:1px solid #1c1c22;padding:3px 10px;font-size:8px;color:#55555f;letter-spacing:.8px;text-transform:uppercase}
-.feed{position:fixed;top:104px;left:0;right:0;bottom:0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#000}
+.feed{position:fixed;top:104px;left:0;right:0;bottom:0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#000;scroll-behavior:smooth}
 .feed::-webkit-scrollbar{width:2px}
 .feed::-webkit-scrollbar-track{background:#000}
 .feed::-webkit-scrollbar-thumb{background:#2a2a32}
@@ -55,6 +61,11 @@ body{background:#000;color:#e8e8ed;font-family:'JetBrains Mono',monospace;font-s
 .row:active{background:#111113}
 .row:nth-child(even){background:#0a0a0a}
 .row.brk{background:rgba(255,59,48,.06)!important;border-left:2px solid #ff3b30;padding-left:8px}
+/* New headline flash */
+.row.fresh{animation:newsflash 1.5s ease}
+@keyframes newsflash{0%{background:rgba(255,149,0,.12);transform:translateX(-4px)}30%{background:rgba(255,149,0,.06);transform:translateX(0)}100%{background:transparent}}
+.row.brk.fresh{animation:breakflash 2s ease}
+@keyframes breakflash{0%{background:rgba(255,59,48,.2);transform:translateX(-4px)}30%{background:rgba(255,59,48,.1);transform:translateX(0)}100%{background:rgba(255,59,48,.05)}}
 .col-time{flex-shrink:0;width:32px;font-size:9px;color:#55555f;text-align:right}
 .col-src{flex-shrink:0;width:36px;text-align:center}
 .sr{display:inline-block;font-size:8px;font-weight:600;padding:1px 4px;border-radius:1px}
@@ -90,12 +101,19 @@ body{background:#000;color:#e8e8ed;font-family:'JetBrains Mono',monospace;font-s
 .dbdy .dt{font-size:9px;color:#55555f;margin-bottom:14px}
 .dbdy .dd{font-size:12px;line-height:1.8;color:#8b8b96;margin-bottom:18px}
 .dl{display:inline-block;font-size:9px;color:#ff9500;text-decoration:none;padding:6px 12px;border:1px solid rgba(255,149,0,.3);border-radius:2px;font-weight:600}
+/* Scroll to top button */
+.scroll-top{position:fixed;bottom:20px;right:14px;z-index:150;width:36px;height:36px;border-radius:50%;background:#16161d;border:1px solid #28283a;color:#ff9500;font-size:14px;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.5);font-family:inherit}
+.scroll-top.show{display:flex}
+/* New headlines badge */
+.new-badge{position:fixed;top:106px;left:50%;transform:translateX(-50%);z-index:150;background:#ff9500;color:#000;font-size:8px;font-weight:700;letter-spacing:.8px;padding:4px 12px;border-radius:12px;cursor:pointer;display:none;box-shadow:0 4px 16px rgba(255,149,0,.3);animation:badgepulse 2s infinite}
+.new-badge.show{display:block}
+@keyframes badgepulse{0%,100%{box-shadow:0 4px 16px rgba(255,149,0,.3)}50%{box-shadow:0 4px 24px rgba(255,149,0,.5)}}
 </style>
 </head>
 <body>
 <div class="topbar">
 <div class="topbar-l"><div class="pulse" id="dot"></div><div class="brand">WIREFEED<i>TERMINAL</i></div></div>
-<div class="topbar-r"><span class="clk" id="clk">--:--:--</span><span class="cnt" id="cnt">0</span><button class="rbtn" id="rb" onclick="go()">&#8635;</button></div>
+<div class="topbar-r"><span class="ws-badge" id="wsbadge">REST</span><span class="clk" id="clk">--:--:--</span><span class="cnt" id="cnt">0</span><button class="rbtn" id="rb" onclick="go()">&#8635;</button></div>
 </div>
 <div class="ticker" id="tickerwrap"><div class="ticker-track" id="ticker"></div></div>
 <div class="fbar">
@@ -109,21 +127,24 @@ body{background:#000;color:#e8e8ed;font-family:'JetBrains Mono',monospace;font-s
 </div>
 <div class="subhdr">TIME &nbsp; SRC &nbsp; HEADLINE</div>
 <div class="feed" id="feed"><div class="empty">INITIALIZING FEED...</div></div>
+<div class="new-badge" id="newbadge" onclick="scrollToTop()">&#9650; NEW HEADLINES</div>
+<button class="scroll-top" id="scrolltop" onclick="scrollToTop()">&#9650;</button>
 <div class="detail" id="det"><div class="dhdr"><button class="dbk" onclick="document.getElementById('det').classList.remove('open')">&#8249; BACK</button></div><div class="dbdy" id="dbdy"></div></div>
 <script>
 var BASE='https://wirefeed.onrender.com';
 var FKEY='d4d3vnhr01qt1lahlv6gd4d3vnhr01qt1lahlv70';
 var items=[];
+var prevItemIds={};
 var cf='all';
 var busy=false;
 
-setInterval(function(){var n=new Date();document.getElementById('clk').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0')},1000);
+/* === TICKER DATA === */
+/* Each entry stores: price, prevClose, change, pct — prevClose is LOCKED from REST and never touched by WebSocket */
+var tickerData={};
+var tickerBuilt=false;
+var ws=null;
+var wsConnected=false;
 
-function ago(iso){var d=new Date(iso);if(isNaN(d.getTime()))return'--';var s=(Date.now()-d.getTime())/1000;if(s<60)return Math.floor(s)+'s';if(s<3600)return Math.floor(s/60)+'m';if(s<86400)return Math.floor(s/3600)+'h';return d.toLocaleDateString('en',{month:'short',day:'numeric'})}
-function esc(s){var e=document.createElement('span');e.textContent=s;return e.innerHTML}
-function srcCls(c){return(c||'source-dj').replace('source-','sr-')}
-
-function loadTicker(){
 var symbols=[
 {s:'OANDA:EUR_USD',n:'EUR/USD',t:'fx'},
 {s:'OANDA:EUR_GBP',n:'EUR/GBP',t:'fx'},
@@ -133,18 +154,18 @@ var symbols=[
 {s:'OANDA:AUD_USD',n:'AUD/USD',t:'fx'},
 {s:'OANDA:XAU_USD',n:'GOLD',t:'commodity'},
 {s:'OANDA:XAG_USD',n:'SILVER',t:'commodity'},
+{s:'OANDA:BCO_USD',n:'BRENT',t:'commodity'},
 {s:'BINANCE:BTCUSDT',n:'BTC',t:'crypto'},
 {s:'BINANCE:ETHUSDT',n:'ETH',t:'crypto'},
-{s:'SPY',n:'S&P500',t:'index'},
-{s:'QQQ',n:'NDQ100',t:'index'},
-{s:'DIA',n:'DOW30',t:'index'},
-{s:'EWQ',n:'CAC40',t:'index'},
-{s:'EWG',n:'DAX',t:'index'},
-{s:'EWU',n:'FTSE',t:'index'},
-{s:'EWJ',n:'NIKKEI',t:'index'},
-{s:'EEM',n:'EM',t:'index'},
-{s:'TLT',n:'US20Y+',t:'rate'},
-{s:'USO',n:'OIL',t:'commodity'},
+{s:'SPY',n:'SPY',t:'index'},
+{s:'QQQ',n:'QQQ',t:'index'},
+{s:'DIA',n:'DIA',t:'index'},
+{s:'EWQ',n:'EWQ',t:'index'},
+{s:'EWG',n:'EWG',t:'index'},
+{s:'EWU',n:'EWU',t:'index'},
+{s:'EWJ',n:'EWJ',t:'index'},
+{s:'EEM',n:'EEM',t:'index'},
+{s:'TLT',n:'TLT',t:'rate'},
 {s:'AMZN',n:'AMZN',t:'index'},
 {s:'NVDA',n:'NVDA',t:'index'},
 {s:'AAPL',n:'AAPL',t:'index'},
@@ -154,8 +175,83 @@ var symbols=[
 {s:'GOOGL',n:'GOOG',t:'index'},
 {s:'JPM',n:'JPM',t:'index'}
 ];
+
+setInterval(function(){var n=new Date();document.getElementById('clk').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0')},1000);
+
+function ago(iso){var d=new Date(iso);if(isNaN(d.getTime()))return'--';var s=(Date.now()-d.getTime())/1000;if(s<60)return Math.floor(s)+'s';if(s<3600)return Math.floor(s/60)+'m';if(s<86400)return Math.floor(s/3600)+'h';return d.toLocaleDateString('en',{month:'short',day:'numeric'})}
+function esc(s){var e=document.createElement('span');e.textContent=s;return e.innerHTML}
+function srcCls(c){return(c||'source-dj').replace('source-','sr-')}
+
+function fmtPrice(p,t){
+if(t==='fx')return p>=100?p.toFixed(2):p.toFixed(4);
+if(t==='crypto')return p>=1000?p.toFixed(0):p.toFixed(2);
+if(p>=10000)return p.toFixed(0);
+if(p>=100)return p.toFixed(1);
+return p.toFixed(2);
+}
+
+/* === BUILD TICKER ONCE === */
+function buildTicker(){
+var ordered=symbols.filter(function(sym){return tickerData[sym.s]});
+if(ordered.length===0)return;
+var h='';
+for(var i=0;i<ordered.length;i++){
+var sym=ordered[i];
+var d=tickerData[sym.s];
+if(!d)continue;
+var dir=d.change>=0?'up':'dn';
+var sign=d.change>=0?'+':'';
+h+='<span class="tk">';
+h+='<span class="tn tn-'+sym.t+'">'+sym.n+'</span> ';
+h+='<span class="tp" data-s="'+sym.s+'">'+fmtPrice(d.price,sym.t)+'</span> ';
+h+='<span class="tc '+dir+'" data-sc="'+sym.s+'">'+(d.change>=0?'&#9650;':'&#9660;')+' '+sign+d.pct.toFixed(2)+'%</span>';
+h+='</span>';
+}
+document.getElementById('ticker').innerHTML=h+h;
+tickerBuilt=true;
+}
+
+/* === UPDATE TICKER IN-PLACE (no innerHTML rebuild = no stutter) === */
+function updateTickerPrice(symKey){
+var d=tickerData[symKey];
+if(!d)return;
+var sym=symbols.find(function(s){return s.s===symKey});
+if(!sym)return;
+
+var priceEls=document.querySelectorAll('.tp[data-s="'+symKey+'"]');
+var changeEls=document.querySelectorAll('.tc[data-sc="'+symKey+'"]');
+
+var dir=d.change>=0?'up':'dn';
+var sign=d.change>=0?'+':'';
+var pr=fmtPrice(d.price,sym.t);
+
+for(var i=0;i<priceEls.length;i++){
+priceEls[i].textContent=pr;
+/* Flash green or red */
+priceEls[i].classList.remove('tick-up','tick-dn');
+if(d.tick){
+priceEls[i].classList.add(d.tick);
+}
+}
+for(var i=0;i<changeEls.length;i++){
+changeEls[i].className='tc '+dir;
+changeEls[i].setAttribute('data-sc',symKey);
+changeEls[i].innerHTML=(d.change>=0?'&#9650;':'&#9660;')+' '+sign+d.pct.toFixed(2)+'%';
+}
+
+/* Clear flash after 600ms */
+if(d.tick){
+setTimeout(function(){
+var els=document.querySelectorAll('.tp[data-s="'+symKey+'"]');
+for(var i=0;i<els.length;i++){els[i].classList.remove('tick-up','tick-dn')}
+},600);
+d.tick='';
+}
+}
+
+/* === LOAD INITIAL PRICES VIA REST (this sets the CORRECT prevClose) === */
+function loadTickerREST(){
 var done=0;
-var results=[];
 symbols.forEach(function(sym,idx){
 setTimeout(function(){
 fetch('https://finnhub.io/api/v1/quote?symbol='+encodeURIComponent(sym.s)+'&token='+FKEY)
@@ -166,35 +262,92 @@ var p=q.c;
 var pc=q.pc||p;
 var ch=p-pc;
 var pct=pc?(ch/pc)*100:0;
-results.push({name:sym.n,type:sym.t,price:p,change:ch,pct:pct,order:idx});
+tickerData[sym.s]={
+price:p,
+prevClose:pc,  /* LOCKED — WebSocket never changes this */
+change:ch,
+pct:pct,
+tick:''
+};
 }
 })
 .catch(function(){})
 .finally(function(){
 done++;
-if(done>=symbols.length&&results.length>0){
-results.sort(function(a,b){return a.order-b.order});
-var h='';
-for(var i=0;i<results.length;i++){
-var r=results[i];
-var dir=r.change>=0?'up':'dn';
-var arrow=r.change>=0?'&#9650;':'&#9660;';
-var pr;
-if(r.type==='fx')pr=r.price>=100?r.price.toFixed(2):r.price.toFixed(4);
-else if(r.type==='crypto')pr=r.price>=1000?r.price.toFixed(0):r.price.toFixed(2);
-else if(r.price>=10000)pr=r.price.toFixed(0);
-else if(r.price>=100)pr=r.price.toFixed(1);
-else pr=r.price.toFixed(2);
-h+='<span class="tk"><span class="tn tn-'+r.type+'">'+r.name+'</span> <span class="tp">'+pr+'</span> <span class="tc '+dir+'">'+arrow+' '+(r.change>=0?'+':'')+r.pct.toFixed(2)+'%</span></span>';
-}
-document.getElementById('ticker').innerHTML=h+h;
+if(done>=symbols.length){
+if(!tickerBuilt)buildTicker();
+else{for(var k in tickerData)updateTickerPrice(k)}
 }
 });
 },idx*50);
 });
 }
 
-function draw(){
+/* === WEBSOCKET LIVE PRICES === */
+function connectWS(){
+if(ws){try{ws.close()}catch(e){}}
+ws=new WebSocket('wss://ws.finnhub.io?token='+FKEY);
+
+ws.onopen=function(){
+wsConnected=true;
+document.getElementById('dot').classList.add('ws');
+var b=document.getElementById('wsbadge');b.textContent='LIVE';b.classList.add('live');
+symbols.forEach(function(sym){
+ws.send(JSON.stringify({type:'subscribe',symbol:sym.s}));
+});
+};
+
+ws.onmessage=function(event){
+try{
+var msg=JSON.parse(event.data);
+if(msg.type==='trade'&&msg.data&&msg.data.length>0){
+/* Process only the LAST trade per symbol in this batch */
+var latest={};
+for(var i=0;i<msg.data.length;i++){
+latest[msg.data[i].s]=msg.data[i].p;
+}
+for(var symKey in latest){
+var existing=tickerData[symKey];
+if(!existing)continue;
+
+var newPrice=latest[symKey];
+var oldPrice=existing.price;
+
+/* Determine tick direction */
+var tick='';
+if(newPrice>oldPrice)tick='tick-up';
+else if(newPrice<oldPrice)tick='tick-dn';
+
+/* Update price but keep prevClose LOCKED from REST */
+existing.price=newPrice;
+existing.change=newPrice-existing.prevClose;
+existing.pct=existing.prevClose?(existing.change/existing.prevClose)*100:0;
+existing.tick=tick;
+
+/* Update DOM in-place (no innerHTML rebuild) */
+if(tickerBuilt)updateTickerPrice(symKey);
+}
+}
+}catch(e){}
+};
+
+ws.onclose=function(){
+wsConnected=false;
+document.getElementById('dot').classList.remove('ws');
+var b=document.getElementById('wsbadge');b.textContent='REST';b.classList.remove('live');
+setTimeout(connectWS,5000);
+};
+
+ws.onerror=function(){ws.close()};
+}
+
+/* === TICKER TOUCH === */
+var tickEl=document.getElementById('tickerwrap');
+tickEl.addEventListener('touchstart',function(){document.getElementById('ticker').classList.add('touched')});
+tickEl.addEventListener('touchend',function(){setTimeout(function(){document.getElementById('ticker').classList.remove('touched')},3000)});
+
+/* === NEWS FEED === */
+function draw(isUpdate){
 var f=document.getElementById('feed');
 var list=cf==='all'?items:items.filter(function(i){return i.categories&&i.categories.indexOf(cf)!==-1});
 document.getElementById('cnt').textContent=list.length;
@@ -211,15 +364,20 @@ else if(ts==='1h'||ts==='2h')lbl='PAST HOUR';
 else if(ts.indexOf('h')!==-1)lbl='EARLIER TODAY';
 else lbl='PREVIOUS';
 if(lbl!==last){h+='<div class="sep"><span>'+lbl+'</span><span>'+new Date().toLocaleDateString('en',{month:'short',day:'numeric'})+'</span></div>';last=lbl}
+var itemKey=(it.title||'').substring(0,60);
+var isFresh=isUpdate&&!prevItemIds[itemKey];
+var freshClass=isFresh?' fresh':'';
 var tags='';
 if(it.categories){for(var j=0;j<it.categories.length;j++){tags+='<span class="tg tg-'+it.categories[j]+'">'+it.categories[j]+'</span>'}}
-h+='<div class="row'+(b?' brk':'')+'" onclick="det('+i+')">';
+h+='<div class="row'+(b?' brk':'')+freshClass+'" onclick="det('+i+')">';
 h+='<div class="col-time">'+ts+'</div>';
 h+='<div class="col-src"><span class="sr '+srcCls(it.sourceClass)+'">'+esc(it.source)+'</span></div>';
 h+='<div class="col-content"><div class="hl">'+(b?'<span class="bt">&#9889; BREAKING</span>':'')+esc(it.title)+'</div>';
 h+='<div class="tags">'+tags+'</div></div></div>';
 }
 f.innerHTML=h;
+prevItemIds={};
+for(var k=0;k<items.length;k++){prevItemIds[(items[k].title||'').substring(0,60)]=true}
 }
 
 function det(idx){
@@ -238,35 +396,66 @@ cf=c;
 var btns=document.querySelectorAll('.fb');
 for(var i=0;i<btns.length;i++)btns[i].classList.remove('on');
 btn.classList.add('on');
-draw();
+draw(false);
 }
 
+/* === SCROLL TO TOP === */
+function scrollToTop(){
+document.getElementById('feed').scrollTo({top:0,behavior:'smooth'});
+document.getElementById('newbadge').classList.remove('show');
+}
+
+var feedEl=document.getElementById('feed');
+feedEl.addEventListener('scroll',function(){
+var btn=document.getElementById('scrolltop');
+if(feedEl.scrollTop>300)btn.classList.add('show');else btn.classList.remove('show');
+if(feedEl.scrollTop<50)document.getElementById('newbadge').classList.remove('show');
+});
+
+/* === FETCH NEWS === */
 function go(){
 if(busy)return;busy=true;
 document.getElementById('dot').classList.add('on');
 document.getElementById('rb').textContent='...';
 fetch(BASE+'/api/feed')
 .then(function(r){return r.json()})
-.then(function(data){if(data.items&&data.items.length>0){items=data.items;draw()}})
+.then(function(data){
+if(data.items&&data.items.length>0){
+var isUpdate=items.length>0;
+var oldFirst=items.length>0?(items[0].title||'').substring(0,60):'';
+items=data.items;
+draw(isUpdate);
+var newFirst=items.length>0?(items[0].title||'').substring(0,60):'';
+if(isUpdate&&oldFirst!==newFirst&&feedEl.scrollTop>200){
+document.getElementById('newbadge').classList.add('show');
+}
+}
+})
 .catch(function(e){console.error(e);document.getElementById('feed').innerHTML='<div class="empty">CONNECTION ERROR - TAP REFRESH</div>'})
 .finally(function(){busy=false;document.getElementById('dot').classList.remove('on');document.getElementById('rb').innerHTML='&#8635;'});
 }
 
-var ty=0;var feedEl=document.getElementById('feed');
+/* === TOUCH GESTURES === */
+var ty=0;
 feedEl.addEventListener('touchstart',function(e){ty=e.touches[0].clientY});
 feedEl.addEventListener('touchend',function(e){if(feedEl.scrollTop===0&&e.changedTouches[0].clientY-ty>80)go()});
 var dx=0;var detEl=document.getElementById('det');
 detEl.addEventListener('touchstart',function(e){dx=e.touches[0].clientX});
 detEl.addEventListener('touchend',function(e){if(e.changedTouches[0].clientX-dx>80)detEl.classList.remove('open')});
 
-var tickEl=document.getElementById('ticker');
-tickEl.addEventListener('touchstart',function(){document.getElementById('ticker').classList.add('touched')});
-tickEl.addEventListener('touchend',function(){setTimeout(function(){document.getElementById('ticker').classList.remove('touched')},3000)});
+/* === INIT === */
+/* 1. Load correct prices via REST first */
+loadTickerREST();
 
-loadTicker();
-setInterval(loadTicker,60000);
+/* 2. Connect WebSocket after REST has had time to load (3s) */
+setTimeout(connectWS,3000);
+
+/* 3. Fallback: refresh REST prices every 60s if WS drops */
+setInterval(function(){if(!wsConnected)loadTickerREST()},60000);
+
+/* 4. Load news + auto-refresh every 45s */
 go();
-setInterval(go,60000);
+setInterval(go,45000);
 </script>
 </body>
 </html>
