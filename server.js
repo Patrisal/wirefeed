@@ -58,7 +58,7 @@ function parseXML(text) {
     const block = match[1];
     const title = extractTag(block, 'title');
     const link = extractLink(block);
-    const desc = extractTag(block, 'description') || extractTag(block, 'summary') || extractTag(block, 'content');
+    const desc = extractTag(block, 'description') || extractTag(block, 'summary') || extractTag(block, 'content:encoded') || extractTag(block, 'content');
     const pubDate = extractTag(block, 'pubDate') || extractTag(block, 'published') || extractTag(block, 'updated') || extractTag(block, 'dc:date');
     if (title) {
       items.push({
@@ -94,7 +94,11 @@ function extractLink(block) {
 }
 
 function cleanHTML(str) {
-  return (str || '').replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ');
+  return (str || '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#([0-9]+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ');
 }
 
 // ===== CATEGORY DETECTION =====
