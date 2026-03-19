@@ -121,14 +121,19 @@ body.search-open .new-badge{top:140px}
 /* === SECTION SEPARATORS — Inter font === */
 .sep{padding:4px 10px;background:#0d0d14;border-bottom:1px solid #1c1c22;font-size:8px;color:#444450;letter-spacing:1px;text-transform:uppercase;display:flex;justify-content:space-between;font-family:'Inter',sans-serif;font-weight:600}
 
-/* === BREAKING BANNER === */
-.brk-banner{display:flex;align-items:center;gap:7px;padding:0 10px;height:26px;background:rgba(255,59,48,.06);border-bottom:1px solid rgba(255,59,48,.18);border-left:2px solid #ff3b30;cursor:pointer;flex-shrink:0}
-.brk-banner:hover{background:rgba(255,59,48,.09)}
+/* === BREAKING CARD === */
+.brk-card{position:fixed;right:14px;top:68px;width:260px;background:#0d0d14;border:1px solid rgba(255,59,48,.35);border-left:3px solid #ff3b30;border-radius:3px;z-index:160;transform:translateX(300px);transition:transform .3s cubic-bezier(.22,.68,0,1.2);box-shadow:0 8px 32px rgba(0,0,0,.7);overflow:hidden}
+.brk-card.show{transform:translateX(0)}
+.brk-card-hdr{display:flex;align-items:center;gap:6px;padding:7px 8px 5px;border-bottom:1px solid rgba(255,59,48,.12)}
 .brk-dot{width:5px;height:5px;border-radius:50%;background:#ff3b30;animation:blink .8s infinite;flex-shrink:0}
-.brk-label{font-family:'Inter',sans-serif;font-size:8px;font-weight:700;color:#ff3b30;letter-spacing:.8px;text-transform:uppercase;flex-shrink:0}
-.brk-text{font-family:'JetBrains Mono',monospace;font-size:10px;color:#ff9191;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.brk-more{font-family:'Inter',sans-serif;font-size:8px;color:#ff3b30;opacity:.6;flex-shrink:0;white-space:nowrap}
-.brk-x{background:none;border:none;color:#ff3b30;opacity:.5;cursor:pointer;font-size:10px;padding:2px;line-height:1;flex-shrink:0}.brk-x:hover{opacity:1}
+.brk-card-label{font-family:'Inter',sans-serif;font-size:8px;font-weight:700;color:#ff3b30;letter-spacing:.8px;text-transform:uppercase;flex:1}
+.brk-card-x{background:none;border:none;color:#55555f;cursor:pointer;font-size:11px;padding:1px;line-height:1}.brk-card-x:hover{color:#ff3b30}
+.brk-card-body{padding:8px;cursor:pointer}.brk-card-body:hover{background:rgba(255,59,48,.04)}
+.brk-card-src{margin-bottom:5px}
+.brk-card-title{font-family:'JetBrains Mono',monospace;font-size:10px;color:#ffb3b0;line-height:1.4;margin-bottom:6px}
+.brk-card-meta{display:flex;align-items:center;justify-content:space-between}
+.brk-card-time{font-family:'Inter',sans-serif;font-size:8px;color:#55555f}
+.brk-card-more{font-family:'Inter',sans-serif;font-size:8px;color:#ff3b30;opacity:.7}
 
 /* === EMPTY STATE === */
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;color:#444450;font-size:11px;text-align:center;gap:10px;font-family:'Inter',sans-serif}
@@ -231,6 +236,23 @@ body.search-open .new-badge{top:140px}
 <!-- NEW BADGE & SCROLL TOP -->
 <div class="new-badge" id="newbadge" onclick="scrollToTop()">&#9650; NEW HEADLINES</div>
 <button class="scroll-top" id="scrolltop" onclick="scrollToTop()">&#9650;</button>
+
+<!-- BREAKING CARD -->
+<div class="brk-card" id="brk-card">
+  <div class="brk-card-hdr">
+    <div class="brk-dot"></div>
+    <span class="brk-card-label">&#9889; Breaking Now</span>
+    <button class="brk-card-x" onclick="dismissBrk()">&#10005;</button>
+  </div>
+  <div class="brk-card-body" id="brk-card-body" onclick="openBrkCard()">
+    <div class="brk-card-src" id="brk-card-src"></div>
+    <div class="brk-card-title" id="brk-card-title"></div>
+    <div class="brk-card-meta">
+      <span class="brk-card-time" id="brk-card-time"></span>
+      <span class="brk-card-more" id="brk-card-more"></span>
+    </div>
+  </div>
+</div>
 
 <!-- STATUS BAR -->
 <div class="statusbar" id="statusbar">
@@ -488,19 +510,9 @@ function draw(isUpdate){
     return;
   }
   var h='';
-  /* Breaking banner — slim single line */
-  var brks=list.filter(function(i){return i.breaking});
-  if(brks.length>0&&cf!=='saved'&&!searchQ&&!brkDismissed){
-    var bi0=brks[0];var bi0Idx=list.indexOf(bi0);
-    var moreLabel=brks.length>1?' <span class="brk-more">+'+( brks.length-1)+' more</span>':'';
-    h+='<div class="brk-banner" onclick="det('+bi0Idx+')">';
-    h+='<div class="brk-dot"></div>';
-    h+='<span class="brk-label">&#9889; Breaking</span>';
-    h+='<span class="brk-text">'+esc(bi0.title)+'</span>';
-    h+=moreLabel;
-    h+='<button class="brk-x" onclick="event.stopPropagation();dismissBrk()" title="Dismiss">&#10005;</button>';
-    h+='</div>';
-  }
+  /* Update breaking card (separate floating element) */
+  var brks=items.filter(function(i){return i.breaking});
+  updateBrkCard(brks);
   var last='';
   for(var i=0;i<list.length;i++){
     var it=list[i];var b=it.breaking;var ts=ago(it.pubDate);
@@ -614,8 +626,25 @@ function removeBk(i){bookmarks.splice(i,1);saveLS('wf_bk',bookmarks);renderBkDra
 function openDrawer(){document.getElementById('bk-drawer').classList.add('open');document.getElementById('bk-overlay').classList.add('open');renderBkDrawer()}
 function closeDrawer(){document.getElementById('bk-drawer').classList.remove('open');document.getElementById('bk-overlay').classList.remove('open')}
 
-/* === BREAKING DISMISS === */
-function dismissBrk(){brkDismissed=true;draw(false)}
+/* === BREAKING CARD === */
+var brkCardItem=null;
+function updateBrkCard(brks){
+  if(!brks||brks.length===0||brkDismissed){document.getElementById('brk-card').classList.remove('show');return}
+  var bi=brks[0];
+  brkCardItem=bi;
+  document.getElementById('brk-card-src').innerHTML='<span class="sr '+srcCls(bi.sourceClass)+'">'+esc(bi.source)+'</span>';
+  document.getElementById('brk-card-title').textContent=bi.title;
+  document.getElementById('brk-card-time').textContent=ago(bi.pubDate)+' ago';
+  document.getElementById('brk-card-more').textContent=brks.length>1?'+'+( brks.length-1)+' more breaking':'';
+  document.getElementById('brk-card').classList.add('show');
+}
+function openBrkCard(){
+  if(!brkCardItem)return;
+  var idx=currentList.indexOf(brkCardItem);
+  if(idx===-1){currentList.unshift(brkCardItem);idx=0}
+  det(idx);
+}
+function dismissBrk(){brkDismissed=true;document.getElementById('brk-card').classList.remove('show')}
 
 /* === FILTER === */
 function fil(c,btn){
@@ -661,7 +690,7 @@ function go(){
       var isUpdate=items.length>0;
       var oldFirst=items.length>0?(items[0].title||'').substring(0,60):'';
       items=data.items;lastUpdated=Date.now();
-      if(oldFirst!==items[0].title.substring(0,60))brkDismissed=false;
+      if(oldFirst!==items[0].title.substring(0,60)){brkDismissed=false;}
       draw(isUpdate);updateStatusBar();
       var newFirst=items.length>0?(items[0].title||'').substring(0,60):'';
       if(isUpdate&&oldFirst!==newFirst&&feedEl.scrollTop>200)document.getElementById('newbadge').classList.add('show');
