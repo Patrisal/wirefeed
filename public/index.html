@@ -133,7 +133,7 @@ body.search-open .new-badge{top:140px}
 .brk-card-title{font-family:'JetBrains Mono',monospace;font-size:10px;color:#ffb3b0;line-height:1.4;margin-bottom:6px}
 .brk-card-meta{display:flex;align-items:center;justify-content:space-between}
 .brk-card-time{font-family:'Inter',sans-serif;font-size:8px;color:#55555f}
-.brk-card-more{font-family:'Inter',sans-serif;font-size:8px;color:#ff3b30;opacity:.7}
+.brk-card-more{font-family:'Inter',sans-serif;font-size:8px;color:#ff3b30;opacity:.7}.brk-card-more:hover{opacity:1}
 
 /* === EMPTY STATE === */
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;color:#444450;font-size:11px;text-align:center;gap:10px;font-family:'Inter',sans-serif}
@@ -627,16 +627,37 @@ function openDrawer(){document.getElementById('bk-drawer').classList.add('open')
 function closeDrawer(){document.getElementById('bk-drawer').classList.remove('open');document.getElementById('bk-overlay').classList.remove('open')}
 
 /* === BREAKING CARD === */
+var brkItems=[];
+var brkCardIdx=0;
 var brkCardItem=null;
 function updateBrkCard(brks){
   if(!brks||brks.length===0||brkDismissed){document.getElementById('brk-card').classList.remove('show');return}
-  var bi=brks[0];
+  brkItems=brks;
+  if(brkCardIdx>=brkItems.length)brkCardIdx=0;
+  renderBrkCard();
+  document.getElementById('brk-card').classList.add('show');
+}
+function renderBrkCard(){
+  var bi=brkItems[brkCardIdx];if(!bi)return;
   brkCardItem=bi;
   document.getElementById('brk-card-src').innerHTML='<span class="sr '+srcCls(bi.sourceClass)+'">'+esc(bi.source)+'</span>';
   document.getElementById('brk-card-title').textContent=bi.title;
   document.getElementById('brk-card-time').textContent=ago(bi.pubDate)+' ago';
-  document.getElementById('brk-card-more').textContent=brks.length>1?'+'+( brks.length-1)+' more breaking':'';
-  document.getElementById('brk-card').classList.add('show');
+  var remaining=brkItems.length-1-(brkCardIdx);
+  var moreEl=document.getElementById('brk-card-more');
+  if(remaining>0){
+    moreEl.textContent='+'+remaining+' more breaking';
+    moreEl.style.cursor='pointer';
+    moreEl.style.textDecoration='underline';
+    moreEl.onclick=function(e){e.stopPropagation();brkCardIdx=(brkCardIdx+1)%brkItems.length;renderBrkCard()};
+  }else if(brkItems.length>1){
+    moreEl.textContent='&#8635; back to first';
+    moreEl.style.cursor='pointer';
+    moreEl.style.textDecoration='underline';
+    moreEl.onclick=function(e){e.stopPropagation();brkCardIdx=0;renderBrkCard()};
+  }else{
+    moreEl.textContent='';moreEl.onclick=null;
+  }
 }
 function openBrkCard(){
   if(!brkCardItem)return;
