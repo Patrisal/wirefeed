@@ -113,6 +113,26 @@ body.search-open .new-badge{top:140px}
 .tg-rates{color:#30d158;background:rgba(48,209,88,.07)}
 .tg-commodities{color:#bf5af2;background:rgba(191,90,242,.07)}
 .tg-tech{color:#64d2ff;background:rgba(100,210,255,.07)}
+.tg-nbfi{color:#ff375f;background:rgba(255,55,95,.07)}
+
+/* === NBFI SEVERITY BADGES === */
+.sev{font-size:7px;padding:1px 4px;border-radius:1px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;font-family:'Inter',sans-serif;display:inline-block;margin-right:3px;vertical-align:middle}
+.sev-critical{color:#ff0040;background:rgba(255,0,64,.15);border:1px solid rgba(255,0,64,.25)}
+.sev-high{color:#ff375f;background:rgba(255,55,95,.1);border:1px solid rgba(255,55,95,.2)}
+.sev-medium{color:#ff9500;background:rgba(255,149,0,.1);border:1px solid rgba(255,149,0,.18)}
+.sev-low{color:#636370;background:rgba(99,99,112,.08);border:1px solid rgba(99,99,112,.12)}
+
+/* === NBFI ALERT ROWS === */
+.row.nbfi-critical{border-left:2px solid #ff0040!important;padding-left:8px;background:rgba(255,0,64,.03)!important}
+.row.nbfi-high{border-left:2px solid #ff375f;padding-left:8px}
+
+/* === NBFI FILTER BUTTON === */
+.fb[data-c="nbfi"]{color:#ff375f;border-color:rgba(255,55,95,.25)}
+.fb[data-c="nbfi"].on{background:#ff375f;border-color:#ff375f;color:#fff}
+
+/* === NBFI SUBHEADER PANEL === */
+.nbfi-dist{display:flex;gap:8px;align-items:center;font-family:'Inter',sans-serif;font-size:8px;letter-spacing:.5px}
+.nd-crit{color:#ff0040}.nd-high{color:#ff375f}.nd-med{color:#ff9500}.nd-low{color:#636370}
 
 /* === BOOKMARK BUTTON === */
 .bk-btn{background:none;border:none;color:#2a2a36;cursor:pointer;font-size:13px;padding:2px;line-height:1;flex-shrink:0;align-self:center;transition:color .15s}
@@ -217,6 +237,7 @@ body.search-open .new-badge{top:140px}
   <button class="fb"    data-c="rates"       onclick="fil('rates',this)">RATES/FX <span class="fc" id="fc-rates"></span></button>
   <button class="fb"    data-c="commodities" onclick="fil('commodities',this)">COMMO <span class="fc" id="fc-commodities"></span></button>
   <button class="fb"    data-c="tech"        onclick="fil('tech',this)">TECH <span class="fc" id="fc-tech"></span></button>
+  <button class="fb"    data-c="nbfi"        onclick="fil('nbfi',this)">&#9888; NBFI <span class="fc" id="fc-nbfi"></span></button>
   <button class="fb"    data-c="saved"       onclick="fil('saved',this)">&#9733; SAVED <span class="fc" id="fc-saved"></span></button>
 </div>
 
@@ -464,6 +485,7 @@ function updateCounts(){
     var n=items.filter(function(i){return i.categories&&i.categories.indexOf(c)!==-1}).length;
     e.textContent=n||'';
   });
+  var nb=document.getElementById('fc-nbfi');if(nb){var nn=items.filter(function(i){return i.categories&&i.categories.indexOf('nbfi')!==-1}).length;nb.textContent=nn||''}
   var sb=document.getElementById('fc-saved');if(sb)sb.textContent=bookmarks.length||'';
   document.getElementById('bk-cnt').textContent=bookmarks.length;
 }
@@ -491,17 +513,36 @@ function getList(){
   if(cf==='saved')list=bookmarks.slice();
   else if(cf==='all')list=items.slice();
   else list=items.filter(function(i){return i.categories&&i.categories.indexOf(cf)!==-1});
+  if(cf==='nbfi')list.sort(function(a,b){return(b.nbfiScore||0)-(a.nbfiScore||0)});
   if(searchQ)list=list.filter(function(i){return(i.title||'').toLowerCase().indexOf(searchQ)!==-1||(i.source||'').toLowerCase().indexOf(searchQ)!==-1});
   return list;
 }
 
 /* === DRAW FEED === */
+function updateSubhdr(){
+  var el=document.getElementById('subhdr');if(!el)return;
+  if(cf==='nbfi'){
+    var ni=items.filter(function(i){return i.categories&&i.categories.indexOf('nbfi')!==-1});
+    var crit=ni.filter(function(i){return i.nbfiSeverity==='CRITICAL'}).length;
+    var high=ni.filter(function(i){return i.nbfiSeverity==='HIGH'}).length;
+    var med=ni.filter(function(i){return i.nbfiSeverity==='MEDIUM'}).length;
+    var low=ni.filter(function(i){return i.nbfiSeverity==='LOW'||!i.nbfiSeverity}).length;
+    var parts=[];
+    if(crit)parts.push('<span class="nd-crit">'+crit+' CRIT</span>');
+    if(high)parts.push('<span class="nd-high">'+high+' HIGH</span>');
+    if(med)parts.push('<span class="nd-med">'+med+' MED</span>');
+    if(low)parts.push('<span class="nd-low">'+low+' LOW</span>');
+    el.innerHTML='<span>NBFI EARLY WARNING</span><span class="nbfi-dist">'+(parts.length?parts.join(' &middot; '):'NO ALERTS DETECTED')+'</span>';
+  }else{
+    el.textContent='TIME · SOURCE · HEADLINE';
+  }
+}
 function draw(isUpdate){
   var f=document.getElementById('feed');
   var list=getList();
   currentList=list;
   document.getElementById('cnt').textContent=list.length;
-  updateCounts();
+  updateCounts();updateSubhdr();
   if(list.length===0){
     var msg=searchQ?'No results for "'+searchQ+'"':cf==='saved'?'No saved articles yet':'No items in this category';
     var icon=cf==='saved'?'&#9734;':'&#9685;';
@@ -525,10 +566,13 @@ function draw(isUpdate){
     var itemKey=(it.title||'').substring(0,60);
     var isFresh=isUpdate&&!prevItemIds[itemKey];
     var tags='';if(it.categories)for(var j=0;j<it.categories.length;j++)tags+='<span class="tg tg-'+it.categories[j]+'">'+it.categories[j]+'</span>';
-    h+='<div class="row'+(b?' brk':'')+(isRead(it.title)?' read':'')+(isFresh?' fresh':'')+'" onclick="det('+i+')">';
+    var sevBadge='';var nbfiCls='';
+    if(it.nbfiSeverity&&it.nbfiSeverity!=='LOW'){var sc=it.nbfiSeverity.toLowerCase();sevBadge='<span class="sev sev-'+sc+'">'+it.nbfiSeverity+'</span>';}
+    if(it.nbfiSeverity==='CRITICAL')nbfiCls=' nbfi-critical';else if(it.nbfiSeverity==='HIGH')nbfiCls=' nbfi-high';
+    h+='<div class="row'+(b?' brk':'')+(isRead(it.title)?' read':'')+(isFresh?' fresh':'')+nbfiCls+'" onclick="det('+i+')">';
     h+='<div class="col-time" data-ts="'+it.pubDate+'">'+ts+'</div>';
     h+='<div class="col-src"><span class="sr '+srcCls(it.sourceClass)+'">'+esc(it.source)+'</span></div>';
-    h+='<div class="col-content"><div class="hl">'+(b?'<span class="bt">&#9889; BREAKING</span>':'')+esc(it.title)+'</div>';
+    h+='<div class="col-content"><div class="hl">'+(b?'<span class="bt">&#9889; BREAKING</span>':'')+sevBadge+esc(it.title)+'</div>';
     h+='<div class="tags">'+tags+'</div></div>';
     h+='<button class="bk-btn'+(isBookmarked(it.title)?' saved':'')+'" onclick="event.stopPropagation();toggleBk('+i+')" title="Save">&#9733;</button>';
     h+='</div>';
@@ -546,11 +590,14 @@ function det(idx){
   var d=new Date(it.pubDate);
   var ts=isNaN(d.getTime())?'':d.toLocaleString('en-GB',{weekday:'short',year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
   var desc=it.description?('<div class="dd">'+esc(it.description)+'</div>'):'<div class="no-preview">No preview available — open the source to read the full article.</div>';
+  var nbfiDetail='';
+  if(it.nbfiSeverity){var sc2=it.nbfiSeverity.toLowerCase();nbfiDetail='<span class="sev sev-'+sc2+'" style="margin-right:6px">'+it.nbfiSeverity+'</span><span style="font-size:8px;color:#444450;font-family:Inter,sans-serif">NBFI RISK SCORE '+Math.round(it.nbfiScore||0)+'</span><br><br>';}
   document.getElementById('dbdy').innerHTML=
     '<span class="sr '+srcCls(it.sourceClass)+'">'+esc(it.source)+'</span>'+
     '<h1>'+esc(it.title)+'</h1>'+
     '<div class="dt">'+ts+(ts?' &middot; ':'')+ago(it.pubDate)+' ago</div>'+
     '<div class="tags" style="margin-bottom:16px">'+tags+'</div>'+
+    nbfiDetail+
     desc+(it.link?'<a href="'+it.link+'" target="_blank" rel="noopener" class="dl">READ FULL ARTICLE &rarr;</a>':'');
   var bkBtn=document.getElementById('det-bk');
   bkBtn.innerHTML=isBookmarked(it.title)?'&#9733;':'&#9734;';

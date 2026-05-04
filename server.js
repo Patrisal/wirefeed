@@ -41,6 +41,16 @@ const FEEDS = [
   { url: 'https://feeds.bbci.co.uk/news/technology/rss.xml', source: 'BBC', sourceClass: 'source-rtrs', categories: ['tech'] },
   { url: 'https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml', source: 'NYT', sourceClass: 'source-wsj', categories: ['tech'] },
   { url: 'https://www.theverge.com/rss/index.xml', source: 'VRGE', sourceClass: 'source-rtrs', categories: ['tech'] },
+
+  // === NBFI / FINANCIAL STABILITY ===
+  { url: 'https://www.sec.gov/rss/news/press-releases.rss', source: 'SEC', sourceClass: 'source-fed', categories: ['nbfi','finance'] },
+  { url: 'https://www.fca.org.uk/news/rss.xml', source: 'FCA', sourceClass: 'source-ecb', categories: ['nbfi','finance'] },
+  { url: 'https://www.fsb.org/feed/', source: 'FSB', sourceClass: 'source-imf', categories: ['nbfi','macro'] },
+  { url: 'https://www.bis.org/rss/', source: 'BIS', sourceClass: 'source-ecb', categories: ['nbfi','rates','macro'] },
+  { url: 'https://www.esma.europa.eu/rss.xml', source: 'ESMA', sourceClass: 'source-ecb', categories: ['nbfi','rates'] },
+  { url: 'https://www.hedgeweek.com/feed/', source: 'HW', sourceClass: 'source-bbn', categories: ['nbfi','finance'] },
+  { url: 'https://www.insurancejournal.com/feeds/rss/news/', source: 'INS', sourceClass: 'source-rtrs', categories: ['nbfi','finance'] },
+  { url: 'https://www.pionline.com/arc/outboundfeeds/rss/', source: 'P&I', sourceClass: 'source-dj', categories: ['nbfi','finance'] },
 ];
 
 // ===== IN-MEMORY CACHE =====
@@ -104,6 +114,7 @@ function cleanHTML(str) {
 // ===== CATEGORY DETECTION =====
 const CATEGORY_KEYWORDS = {
   macro: ['gdp','inflation','unemployment','pmi','cpi','pce','economic growth','recession','fiscal','trade balance','manufacturing','consumer confidence','retail sales','housing','jobs report','nonfarm','payrolls','labor market','labour','imf','world bank','economic data'],
+  nbfi: ['hedge fund','hedge funds','asset manager','asset management','money market fund','mmf','broker-dealer','prime broker','prime brokerage','clearing house','central counterparty','ccp','private equity','insurance company','pension fund','pension scheme','shadow banking','investment fund','fund manager','mutual fund','structured finance','securitization','securitisation','nbfi','non-bank financial','family office','sovereign wealth fund','endowment fund'],
   geo: ['war','conflict','military','sanction','geopolit','nato','missile','strike','invasion','ceasefire','troops','nuclear','diplomacy','territory','iran','ukraine','russia','china','taiwan','israel','gaza','houthi','north korea','syria','lebanon','yemen'],
   finance: ['stock','equity','ipo','earnings','revenue','profit','merger','acquisition','buyback','dividend','market cap','s&p','nasdaq','dow jones','ftse','nikkei','dax','rally','crash','hedge fund','wall street','bank','index fund'],
   rates: ['interest rate','bond','yield','treasury','spread','credit','forex','currency','dollar','euro','yen','sterling','fed ','ecb ','boj','boe','central bank','monetary policy','rate hike','rate cut','basis points','swap','libor','sofr','gilt','bund'],
@@ -120,6 +131,59 @@ function detectCategories(title, desc) {
     }
   }
   return cats;
+}
+
+// ===== NBFI EARLY WARNING ENGINE =====
+const NBFI_ENTITIES = [
+  'hedge fund','hedge funds','asset manager','asset management','money market fund','mmf',
+  'broker-dealer','prime broker','prime brokerage','clearing house','central counterparty','ccp',
+  'private equity','insurance company','pension fund','pension scheme','shadow banking',
+  'investment fund','fund manager','mutual fund','structured finance','spv',
+  'special purpose vehicle','securitization','securitisation','credit fund','leveraged fund',
+  'family office','sovereign wealth fund','endowment fund','nbfi','non-bank financial',
+];
+
+const NBFI_STRESS = [
+  // Critical (20 pts) — acute stress events
+  {kw:'redemption freeze',w:20},{kw:'suspended redemptions',w:20},{kw:'halted redemptions',w:20},
+  {kw:'redemption gate',w:20},{kw:'gating',w:20},{kw:'fire sale',w:20},
+  {kw:'forced selling',w:20},{kw:'fund collapse',w:20},{kw:'fund failure',w:20},
+  {kw:'fund suspension',w:20},{kw:'assets frozen',w:20},{kw:'frozen assets',w:20},
+  {kw:'run on fund',w:20},{kw:'winding down',w:20},{kw:'wind-down',w:20},
+  {kw:'insolvency',w:20},
+  // High (10 pts) — serious stress indicators
+  {kw:'margin call',w:10},{kw:'liquidity stress',w:10},{kw:'liquidity crunch',w:10},
+  {kw:'funding stress',w:10},{kw:'credit event',w:10},{kw:'covenant breach',w:10},
+  {kw:'rating downgrade',w:10},{kw:'regulatory probe',w:10},{kw:'enforcement action',w:10},
+  {kw:'sec investigation',w:10},{kw:'fca warning',w:10},{kw:'repo stress',w:10},
+  {kw:'collateral call',w:10},{kw:'deleveraging',w:10},{kw:'mass redemption',w:10},
+  {kw:'large outflows',w:10},{kw:'capital shortfall',w:10},{kw:'market dislocation',w:10},
+  {kw:'default',w:10},{kw:'solvency concern',w:10},
+  // Medium (5 pts) — early warning signals
+  {kw:'net outflows',w:5},{kw:'spread widening',w:5},{kw:'cds widening',w:5},
+  {kw:'contagion',w:5},{kw:'systemic risk',w:5},{kw:'financial stability risk',w:5},
+  {kw:'stress test',w:5},{kw:'concentration risk',w:5},{kw:'volatility spike',w:5},
+  {kw:'leverage concerns',w:5},{kw:'counterparty risk',w:5},{kw:'redemption',w:4},
+  {kw:'withdrawals',w:3},{kw:'outflows',w:2},
+];
+
+const NBFI_SOURCE_BONUS = {
+  SEC:15, FCA:15, FSB:15, BIS:15, ESMA:12, IMF:12, ECB:10, FED:10,
+  FT:8, RTRS:8, HW:6, 'P&I':6, INS:5,
+};
+
+function scoreNBFI(title, desc, source) {
+  const text = ((title || '') + ' ' + (desc || '')).toLowerCase();
+  const entityHits = NBFI_ENTITIES.filter(e => text.includes(e));
+  if (entityHits.length === 0) return null;
+  let score = entityHits.length * 5;
+  const stressHits = [];
+  for (const sig of NBFI_STRESS) {
+    if (text.includes(sig.kw)) { score += sig.w; stressHits.push(sig.kw); }
+  }
+  score += (NBFI_SOURCE_BONUS[source] || 5);
+  const severity = score >= 60 ? 'CRITICAL' : score >= 35 ? 'HIGH' : score >= 18 ? 'MEDIUM' : 'LOW';
+  return { score, severity, entityHits: entityHits.slice(0, 3), stressHits: stressHits.slice(0, 3) };
 }
 
 // ===== FETCH A SINGLE FEED =====
@@ -143,7 +207,9 @@ async function fetchFeed(feed) {
     return rawItems.map(item => {
       const detectedCats = detectCategories(item.title, item.description);
       const allCats = [...new Set([...detectedCats, ...feed.categories])];
-      return {
+      const nbfi = scoreNBFI(item.title, item.description, feed.source);
+      if (nbfi && !allCats.includes('nbfi')) allCats.push('nbfi');
+      const mapped = {
         title: item.title,
         description: item.description,
         link: item.link,
@@ -154,6 +220,8 @@ async function fetchFeed(feed) {
         categories: allCats,
         breaking: /breaking|urgent|flash|just in|alert/i.test(item.title),
       };
+      if (nbfi) { mapped.nbfiScore = nbfi.score; mapped.nbfiSeverity = nbfi.severity; }
+      return mapped;
     });
   } catch (e) {
     // Silently skip failed feeds
@@ -195,6 +263,30 @@ app.get('/api/feed', async (req, res) => {
     res.json({ items, cached: false, count: items.length });
   } catch (e) {
     res.status(500).json({ error: 'Feed fetch failed', message: e.message });
+  }
+});
+
+// ===== NBFI ALERTS ENDPOINT =====
+app.get('/api/nbfi-alerts', async (req, res) => {
+  try {
+    const now = Date.now();
+    if (cachedItems.length === 0 || (now - lastFetch) >= CACHE_TTL) {
+      const items = await fetchAllFeeds();
+      cachedItems = items;
+      lastFetch = now;
+    }
+    const sevOrder = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+    const minSev = req.query.min || 'LOW';
+    const minIdx = Math.max(0, sevOrder.indexOf(minSev));
+    const alerts = cachedItems
+      .filter(i => i.categories.includes('nbfi') && sevOrder.indexOf(i.nbfiSeverity || 'LOW') >= minIdx)
+      .sort((a, b) => (b.nbfiScore || 0) - (a.nbfiScore || 0))
+      .slice(0, 100);
+    const dist = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+    alerts.forEach(a => { dist[a.nbfiSeverity || 'LOW']++; });
+    res.json({ alerts, count: alerts.length, distribution: dist, generatedAt: new Date().toISOString() });
+  } catch (e) {
+    res.status(500).json({ error: 'NBFI alert fetch failed', message: e.message });
   }
 });
 
