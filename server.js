@@ -134,6 +134,18 @@ function detectCategories(title, desc) {
 }
 
 // ===== NBFI EARLY WARNING ENGINE =====
+
+// ── COUNTERPARTY WATCHLIST ─────────────────────────────────────────────────
+// Add the names of your specific counterparties here (lowercase, partial match).
+// Any article mentioning a watchlisted name gets a hard score boost and a
+// CP MATCH flag, ensuring it always surfaces regardless of other signals.
+const COUNTERPARTIES = [
+  // examples — replace / extend with your actual book:
+  // 'pimco', 'bridgewater', 'blackrock', 'vanguard', 'axa im', 'amundi',
+  // 'man group', 'millennium', 'citadel', 'apollo', 'carlyle', 'kkr',
+  // 'allianz', 'zurich insurance', 'aviva', 'prudential', 'metlife',
+];
+
 const NBFI_ENTITIES = [
   'hedge fund','hedge funds','asset manager','asset management','money market fund','mmf',
   'broker-dealer','prime broker','prime brokerage','clearing house','central counterparty','ccp',
@@ -141,49 +153,96 @@ const NBFI_ENTITIES = [
   'investment fund','fund manager','mutual fund','structured finance','spv',
   'special purpose vehicle','securitization','securitisation','credit fund','leveraged fund',
   'family office','sovereign wealth fund','endowment fund','nbfi','non-bank financial',
+  'asset-backed','collateralised loan','clo','cdo','abs','reinsurer','reinsurance',
 ];
 
 const NBFI_STRESS = [
-  // Critical (20 pts) — acute stress events
-  {kw:'redemption freeze',w:20},{kw:'suspended redemptions',w:20},{kw:'halted redemptions',w:20},
-  {kw:'redemption gate',w:20},{kw:'gating',w:20},{kw:'fire sale',w:20},
-  {kw:'forced selling',w:20},{kw:'fund collapse',w:20},{kw:'fund failure',w:20},
-  {kw:'fund suspension',w:20},{kw:'assets frozen',w:20},{kw:'frozen assets',w:20},
-  {kw:'run on fund',w:20},{kw:'winding down',w:20},{kw:'wind-down',w:20},
-  {kw:'insolvency',w:20},
-  // High (10 pts) — serious stress indicators
-  {kw:'margin call',w:10},{kw:'liquidity stress',w:10},{kw:'liquidity crunch',w:10},
-  {kw:'funding stress',w:10},{kw:'credit event',w:10},{kw:'covenant breach',w:10},
-  {kw:'rating downgrade',w:10},{kw:'regulatory probe',w:10},{kw:'enforcement action',w:10},
-  {kw:'sec investigation',w:10},{kw:'fca warning',w:10},{kw:'repo stress',w:10},
-  {kw:'collateral call',w:10},{kw:'deleveraging',w:10},{kw:'mass redemption',w:10},
-  {kw:'large outflows',w:10},{kw:'capital shortfall',w:10},{kw:'market dislocation',w:10},
-  {kw:'default',w:10},{kw:'solvency concern',w:10},
-  // Medium (5 pts) — early warning signals
-  {kw:'net outflows',w:5},{kw:'spread widening',w:5},{kw:'cds widening',w:5},
-  {kw:'contagion',w:5},{kw:'systemic risk',w:5},{kw:'financial stability risk',w:5},
-  {kw:'stress test',w:5},{kw:'concentration risk',w:5},{kw:'volatility spike',w:5},
-  {kw:'leverage concerns',w:5},{kw:'counterparty risk',w:5},{kw:'redemption',w:4},
-  {kw:'withdrawals',w:3},{kw:'outflows',w:2},
+  // ── Acute events (25 pts) ─────────────────────────────────────────────────
+  {kw:'redemption freeze',w:25},{kw:'suspended redemptions',w:25},{kw:'halted redemptions',w:25},
+  {kw:'redemption gate',w:25},{kw:'gating',w:25},{kw:'fire sale',w:25},
+  {kw:'forced selling',w:25},{kw:'fund collapse',w:25},{kw:'fund failure',w:25},
+  {kw:'fund suspension',w:25},{kw:'assets frozen',w:25},{kw:'frozen assets',w:25},
+  {kw:'run on fund',w:25},{kw:'winding down',w:25},{kw:'wind-down',w:25},
+  {kw:'insolvency',w:25},{kw:'bankruptcy',w:25},{kw:'administration',w:20},
+  {kw:'receivership',w:25},{kw:'chapter 11',w:25},{kw:'chapter 15',w:25},
+  {kw:'bailout',w:20},{kw:'rescue package',w:20},{kw:'emergency capital',w:20},
+  // ── Legal & regulatory (15 pts) ───────────────────────────────────────────
+  {kw:'investigation',w:15},{kw:'under investigation',w:15},{kw:'probe',w:12},
+  {kw:'regulatory probe',w:15},{kw:'enforcement action',w:15},{kw:'sec investigation',w:15},
+  {kw:'fca investigation',w:15},{kw:'fca warning',w:15},{kw:'doj investigation',w:15},
+  {kw:'fraud',w:15},{kw:'misconduct',w:15},{kw:'mis-selling',w:15},
+  {kw:'misappropriation',w:15},{kw:'embezzlement',w:15},{kw:'ponzi',w:25},
+  {kw:'lawsuit',w:12},{kw:'class action',w:15},{kw:'litigation',w:10},
+  {kw:'subpoena',w:15},{kw:'indictment',w:20},{kw:'fine',w:10},{kw:'penalty',w:10},
+  {kw:'censure',w:12},{kw:'sanction',w:10},{kw:'license revoked',w:20},
+  // ── Credit deterioration (15 pts) ─────────────────────────────────────────
+  {kw:'credit downgrade',w:15},{kw:'rating downgrade',w:15},{kw:'downgraded',w:12},
+  {kw:'negative outlook',w:12},{kw:'creditwatch negative',w:15},{kw:'watch negative',w:12},
+  {kw:'below investment grade',w:15},{kw:'junk status',w:15},{kw:'speculative grade',w:12},
+  {kw:'profit warning',w:15},{kw:'earnings warning',w:12},{kw:'revenue miss',w:10},
+  {kw:'write-down',w:15},{kw:'writedown',w:15},{kw:'write-off',w:15},{kw:'impairment',w:12},
+  {kw:'reported losses',w:15},{kw:'quarterly loss',w:12},{kw:'annual loss',w:12},
+  {kw:'covenant breach',w:15},{kw:'covenant waiver',w:12},{kw:'technical default',w:20},
+  {kw:'debt restructuring',w:18},{kw:'restructuring',w:10},{kw:'creditor talks',w:15},
+  // ── Funding & liquidity stress (12 pts) ───────────────────────────────────
+  {kw:'margin call',w:15},{kw:'collateral call',w:12},{kw:'repo stress',w:12},
+  {kw:'liquidity stress',w:12},{kw:'liquidity crunch',w:12},{kw:'liquidity mismatch',w:12},
+  {kw:'funding stress',w:12},{kw:'funding gap',w:12},{kw:'capital shortfall',w:12},
+  {kw:'deleveraging',w:10},{kw:'fire-sale',w:20},{kw:'asset disposal',w:8},
+  {kw:'solvency concern',w:12},{kw:'capital raise',w:8},{kw:'seeking capital',w:12},
+  // ── Market stress signals (8 pts) ─────────────────────────────────────────
+  {kw:'short sellers',w:10},{kw:'short interest',w:8},{kw:'heavily shorted',w:12},
+  {kw:'cds spread',w:10},{kw:'cds widening',w:10},{kw:'spread widening',w:8},
+  {kw:'credit event',w:15},{kw:'default',w:12},{kw:'cross-default',w:15},
+  {kw:'market dislocation',w:10},{kw:'mass redemption',w:12},{kw:'large outflows',w:10},
+  {kw:'significant outflows',w:10},{kw:'net outflows',w:6},{kw:'outflows',w:4},
+  {kw:'redemption',w:5},{kw:'withdrawals',w:4},
+  // ── Governance / management signals (6 pts) ───────────────────────────────
+  {kw:'ceo resigns',w:8},{kw:'ceo departure',w:8},{kw:'chief executive resigns',w:8},
+  {kw:'management exodus',w:10},{kw:'key man risk',w:8},{kw:'sudden departure',w:8},
+  {kw:'whistleblower',w:12},{kw:'internal investigation',w:12},
+  // ── Systemic / macro signals (5 pts) ─────────────────────────────────────
+  {kw:'contagion',w:6},{kw:'systemic risk',w:6},{kw:'counterparty risk',w:6},
+  {kw:'financial stability',w:4},{kw:'concentration risk',w:5},
+  {kw:'volatility spike',w:5},{kw:'leverage concerns',w:5},
 ];
 
 const NBFI_SOURCE_BONUS = {
   SEC:15, FCA:15, FSB:15, BIS:15, ESMA:12, IMF:12, ECB:10, FED:10,
-  FT:8, RTRS:8, HW:6, 'P&I':6, INS:5,
+  FT:10, RTRS:10, HW:8, 'P&I':8, INS:6, BBN:8, SA:4,
 };
 
 function scoreNBFI(title, desc, source) {
   const text = ((title || '') + ' ' + (desc || '')).toLowerCase();
+
+  // Named counterparty check — always wins, regardless of entity match
+  const cpHits = COUNTERPARTIES.filter(cp => text.includes(cp.toLowerCase()));
   const entityHits = NBFI_ENTITIES.filter(e => text.includes(e));
-  if (entityHits.length === 0) return null;
-  let score = entityHits.length * 5;
+
+  if (entityHits.length === 0 && cpHits.length === 0) return null;
+
+  let score = entityHits.length * 5 + cpHits.length * 30;
   const stressHits = [];
   for (const sig of NBFI_STRESS) {
     if (text.includes(sig.kw)) { score += sig.w; stressHits.push(sig.kw); }
   }
   score += (NBFI_SOURCE_BONUS[source] || 5);
-  const severity = score >= 60 ? 'CRITICAL' : score >= 35 ? 'HIGH' : score >= 18 ? 'MEDIUM' : 'LOW';
-  return { score, severity, entityHits: entityHits.slice(0, 3), stressHits: stressHits.slice(0, 3) };
+
+  // Named counterparty + any stress signal → always at least HIGH
+  let severity;
+  if (cpHits.length > 0 && stressHits.length > 0) {
+    severity = score >= 55 ? 'CRITICAL' : 'HIGH';
+  } else {
+    severity = score >= 55 ? 'CRITICAL' : score >= 28 ? 'HIGH' : score >= 14 ? 'MEDIUM' : 'LOW';
+  }
+
+  return {
+    score,
+    severity,
+    entityHits: entityHits.slice(0, 3),
+    stressHits: stressHits.slice(0, 4),
+    cpHits,
+  };
 }
 
 // ===== FETCH A SINGLE FEED =====
@@ -220,7 +279,12 @@ async function fetchFeed(feed) {
         categories: allCats,
         breaking: /breaking|urgent|flash|just in|alert/i.test(item.title),
       };
-      if (nbfi) { mapped.nbfiScore = nbfi.score; mapped.nbfiSeverity = nbfi.severity; }
+      if (nbfi) {
+        mapped.nbfiScore = nbfi.score;
+        mapped.nbfiSeverity = nbfi.severity;
+        mapped.nbfiStress = nbfi.stressHits;
+        if (nbfi.cpHits && nbfi.cpHits.length > 0) mapped.cpMatch = nbfi.cpHits;
+      }
       return mapped;
     });
   } catch (e) {

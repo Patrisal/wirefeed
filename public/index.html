@@ -126,6 +126,15 @@ body.search-open .new-badge{top:140px}
 .row.nbfi-critical{border-left:2px solid #ff0040!important;padding-left:8px;background:rgba(255,0,64,.03)!important}
 .row.nbfi-high{border-left:2px solid #ff375f;padding-left:8px}
 
+/* === CP MATCH BADGE === */
+.cp-match{font-size:7px;padding:1px 4px;border-radius:1px;font-weight:700;letter-spacing:.5px;font-family:'Inter',sans-serif;display:inline-block;margin-right:3px;vertical-align:middle;color:#ffd60a;background:rgba(255,214,10,.12);border:1px solid rgba(255,214,10,.3);text-transform:uppercase}
+
+/* === NBFI DETAIL PANEL === */
+.nbfi-panel{background:#0d0d14;border:1px solid #1c1c22;border-radius:2px;padding:10px 12px;margin-bottom:16px;font-family:'Inter',sans-serif}
+.nbfi-panel-hdr{font-size:8px;color:#444450;letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px}
+.nbfi-stress-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.nst{font-size:7px;padding:1px 5px;border-radius:1px;background:rgba(255,55,95,.08);color:#ff375f;border:1px solid rgba(255,55,95,.15);font-family:'Inter',sans-serif;letter-spacing:.3px}
+
 /* === NBFI FILTER BUTTON === */
 .fb[data-c="nbfi"]{color:#ff375f;border-color:rgba(255,55,95,.25)}
 .fb[data-c="nbfi"].on{background:#ff375f;border-color:#ff375f;color:#fff}
@@ -566,13 +575,14 @@ function draw(isUpdate){
     var itemKey=(it.title||'').substring(0,60);
     var isFresh=isUpdate&&!prevItemIds[itemKey];
     var tags='';if(it.categories)for(var j=0;j<it.categories.length;j++)tags+='<span class="tg tg-'+it.categories[j]+'">'+it.categories[j]+'</span>';
-    var sevBadge='';var nbfiCls='';
+    var sevBadge='';var nbfiCls='';var cpBadge='';
     if(it.nbfiSeverity&&it.nbfiSeverity!=='LOW'){var sc=it.nbfiSeverity.toLowerCase();sevBadge='<span class="sev sev-'+sc+'">'+it.nbfiSeverity+'</span>';}
+    if(it.cpMatch&&it.cpMatch.length>0)cpBadge='<span class="cp-match">&#9670; CP MATCH</span>';
     if(it.nbfiSeverity==='CRITICAL')nbfiCls=' nbfi-critical';else if(it.nbfiSeverity==='HIGH')nbfiCls=' nbfi-high';
     h+='<div class="row'+(b?' brk':'')+(isRead(it.title)?' read':'')+(isFresh?' fresh':'')+nbfiCls+'" onclick="det('+i+')">';
     h+='<div class="col-time" data-ts="'+it.pubDate+'">'+ts+'</div>';
     h+='<div class="col-src"><span class="sr '+srcCls(it.sourceClass)+'">'+esc(it.source)+'</span></div>';
-    h+='<div class="col-content"><div class="hl">'+(b?'<span class="bt">&#9889; BREAKING</span>':'')+sevBadge+esc(it.title)+'</div>';
+    h+='<div class="col-content"><div class="hl">'+(b?'<span class="bt">&#9889; BREAKING</span>':'')+cpBadge+sevBadge+esc(it.title)+'</div>';
     h+='<div class="tags">'+tags+'</div></div>';
     h+='<button class="bk-btn'+(isBookmarked(it.title)?' saved':'')+'" onclick="event.stopPropagation();toggleBk('+i+')" title="Save">&#9733;</button>';
     h+='</div>';
@@ -591,7 +601,13 @@ function det(idx){
   var ts=isNaN(d.getTime())?'':d.toLocaleString('en-GB',{weekday:'short',year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
   var desc=it.description?('<div class="dd">'+esc(it.description)+'</div>'):'<div class="no-preview">No preview available — open the source to read the full article.</div>';
   var nbfiDetail='';
-  if(it.nbfiSeverity){var sc2=it.nbfiSeverity.toLowerCase();nbfiDetail='<span class="sev sev-'+sc2+'" style="margin-right:6px">'+it.nbfiSeverity+'</span><span style="font-size:8px;color:#444450;font-family:Inter,sans-serif">NBFI RISK SCORE '+Math.round(it.nbfiScore||0)+'</span><br><br>';}
+  if(it.nbfiSeverity){
+    var sc2=it.nbfiSeverity.toLowerCase();
+    var cpLine=it.cpMatch&&it.cpMatch.length>0?'<div style="margin-bottom:6px"><span class="cp-match">&#9670; CP MATCH</span><span style="font-size:8px;color:#ffd60a;font-family:Inter,sans-serif;margin-left:6px">'+it.cpMatch.map(esc).join(', ')+'</span></div>':'';
+    var stressLine='';
+    if(it.nbfiStress&&it.nbfiStress.length>0){stressLine='<div class="nbfi-stress-tags">'+it.nbfiStress.map(function(s){return'<span class="nst">'+esc(s)+'</span>'}).join('')+'</div>';}
+    nbfiDetail='<div class="nbfi-panel"><div class="nbfi-panel-hdr">NBFI Risk Analysis</div>'+cpLine+'<span class="sev sev-'+sc2+'">'+it.nbfiSeverity+'</span><span style="font-size:8px;color:#444450;font-family:Inter,sans-serif;margin-left:6px">score '+Math.round(it.nbfiScore||0)+'</span>'+stressLine+'</div>';
+  }
   document.getElementById('dbdy').innerHTML=
     '<span class="sr '+srcCls(it.sourceClass)+'">'+esc(it.source)+'</span>'+
     '<h1>'+esc(it.title)+'</h1>'+
