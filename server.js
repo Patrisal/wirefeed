@@ -47,7 +47,6 @@ const FEEDS = [
   { url: 'https://www.fca.org.uk/news/rss.xml', source: 'FCA', sourceClass: 'source-ecb', categories: ['nbfi','finance'] },
   { url: 'https://www.fsb.org/feed/', source: 'FSB', sourceClass: 'source-imf', categories: ['nbfi','macro'] },
   { url: 'https://www.bis.org/rss/', source: 'BIS', sourceClass: 'source-ecb', categories: ['nbfi','rates','macro'] },
-  { url: 'https://www.esma.europa.eu/rss.xml', source: 'ESMA', sourceClass: 'source-ecb', categories: ['nbfi','rates'] },
   { url: 'https://www.hedgeweek.com/feed/', source: 'HW', sourceClass: 'source-bbn', categories: ['nbfi','finance'] },
   { url: 'https://www.insurancejournal.com/feeds/rss/news/', source: 'INS', sourceClass: 'source-rtrs', categories: ['nbfi','finance'] },
   { url: 'https://www.pionline.com/arc/outboundfeeds/rss/', source: 'P&I', sourceClass: 'source-dj', categories: ['nbfi','finance'] },
@@ -208,7 +207,7 @@ const NBFI_STRESS = [
 ];
 
 const NBFI_SOURCE_BONUS = {
-  SEC:15, FCA:15, FSB:15, BIS:15, ESMA:12, IMF:12, ECB:10, FED:10,
+  SEC:15, FCA:15, FSB:15, BIS:15, IMF:12, ECB:10, FED:10,
   FT:10, RTRS:10, HW:8, 'P&I':8, INS:6, BBN:8, SA:4,
 };
 
